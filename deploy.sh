@@ -65,12 +65,12 @@ sudo -u postgres psql -c "DROP DATABASE IF EXISTS work_scheduler;" 2>/dev/null |
 sudo -u postgres psql -c "DROP USER IF EXISTS work_scheduler;" 2>/dev/null || true
 
 if [ -z "$PG_PASSWORD" ]; then
-  sudo -u postgres psql -c "CREATE USER work_scheduler WITH NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION;"
-  sudo -u postgres psql -c "CREATE DATABASE work_scheduler OWNER work_scheduler;"
+  sudo -u postgres psql -c "CREATE USER work_scheduler WITH NOSUPERUSER INHERIT CREATEDB NOCREATEROLE NOREPLICATION;"
 else
-  sudo -u postgres psql -c "CREATE USER work_scheduler WITH PASSWORD '$PG_PASSWORD' NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION;"
-  sudo -u postgres psql -c "CREATE DATABASE work_scheduler OWNER work_scheduler;"
+  sudo -u postgres psql -c "CREATE USER work_scheduler WITH PASSWORD '$PG_PASSWORD' NOSUPERUSER INHERIT CREATEDB NOCREATEROLE NOREPLICATION;"
 fi
+
+sudo -u postgres psql -c "CREATE DATABASE work_scheduler OWNER work_scheduler;"
 
 echo -e "${GREEN}Database created successfully${NC}"
 
