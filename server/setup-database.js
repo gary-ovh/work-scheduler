@@ -13,31 +13,37 @@ const setupDatabase = async () => {
   try {
     console.log('Setting up database...');
     
-    // Drop database if exists (ignore error if it doesn't exist)
-    try {
+    // Check if database exists
+    const dbExists = await pool.query(
+      'SELECT 1 FROM pg_database WHERE datname = $1',
+      [process.env.DB_NAME]
+    );
+
+    if (dbExists.rows.length > 0) {
+      console.log(`Database "${process.env.DB_NAME}" already exists, dropping...`);
       await pool.query(`DROP DATABASE ${process.env.DB_NAME}`);
-      console.log(`Dropped existing database "${process.env.DB_NAME}"`);
-    } catch (error) {
-      console.log('Database does not exist yet, will create fresh');
     }
 
-    // Also drop user if exists
-    try {
-      await pool.query(`DROP USER IF EXISTS ${process.env.DB_USER}`);
-      console.log('Dropped existing user');
-    } catch (error) {
-      console.log('User does not exist yet');
+    // Check if user exists
+    const userExists = await pool.query(
+      'SELECT 1 FROM pg_roles WHERE rolname = $1',
+      [process.env.DB_USER]
+    );
+
+    if (userExists.rows.length > 0) {
+      console.log(`User "${process.env.DB_USER}" already exists, dropping...`);
+      await pool.query(`DROP USER ${process.env.DB_USER}`);
     }
     
-    // Create user first
+    // Create user with CREATEDB privilege
+    console.log(`Creating user "${process.env.DB_USER}"...`);
     await pool.query(
       `CREATE USER ${process.env.DB_USER} WITH PASSWORD '${process.env.DB_PASSWORD}' CREATEDB`
     );
-    console.log(`User "${process.env.DB_USER}" created`);
 
     // Create database
+    console.log(`Creating database "${process.env.DB_NAME}"...`);
     await pool.query(`CREATE DATABASE ${process.env.DB_NAME} OWNER ${process.env.DB_USER}`);
-    console.log(`Database "${process.env.DB_NAME}" created successfully`);
 
     await pool.end();
 

@@ -20,10 +20,17 @@ function Login({ onLogin }) {
     setError('')
 
     try {
+      console.log('Attempting login with:', formData.email)
       const response = await api.post('/auth/login', formData)
-      onLogin(response.data.token)
+      console.log('Login response:', response.data)
+      if (response.data.token) {
+        onLogin(response.data.token)
+      } else {
+        setError('Invalid response from server')
+      }
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed')
+      console.error('Login error:', err)
+      setError(err.response?.data?.error || 'Login failed. Check console for details.')
     }
   }
 
