@@ -1,0 +1,19 @@
+[Unit]
+Description=Work Scheduler API
+After=network.target postgresql.service
+
+[Service]
+Type=forking
+User=root
+WorkingDirectory=/var/www/work-scheduler
+Environment=NODE_ENV=production
+Environment=PORT=5000
+ExecStart=/usr/bin/pm2 start server/server.js --name work-scheduler-api
+ExecReload=/usr/bin/pm2 restart work-scheduler-api
+ExecStop=/usr/bin/pm2 stop work-scheduler-api
+Restart=on-failure
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

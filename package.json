@@ -1,0 +1,17 @@
+{
+  "name": "work-scheduler",
+  "version": "1.0.0",
+  "description": "Work scheduling web application",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm run dev",
+    "build": "cd client && npm run build"
+  },
+  "keywords": ["scheduling", "work", "shifts"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
