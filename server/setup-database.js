@@ -11,9 +11,32 @@ const pool = new Pool({
 
 const setupDatabase = async () => {
   try {
-    console.log('Creating database...');
+    console.log('Setting up database...');
     
-    await pool.query(`CREATE DATABASE ${process.env.DB_NAME}`);
+    // Drop database if exists (ignore error if it doesn't exist)
+    try {
+      await pool.query(`DROP DATABASE ${process.env.DB_NAME}`);
+      console.log(`Dropped existing database "${process.env.DB_NAME}"`);
+    } catch (error) {
+      console.log('Database does not exist yet, will create fresh');
+    }
+
+    // Also drop user if exists
+    try {
+      await pool.query(`DROP USER IF EXISTS ${process.env.DB_USER}`);
+      console.log('Dropped existing user');
+    } catch (error) {
+      console.log('User does not exist yet');
+    }
+    
+    // Create user first
+    await pool.query(
+      `CREATE USER ${process.env.DB_USER} WITH PASSWORD '${process.env.DB_PASSWORD}' CREATEDB`
+    );
+    console.log(`User "${process.env.DB_USER}" created`);
+
+    // Create database
+    await pool.query(`CREATE DATABASE ${process.env.DB_NAME} OWNER ${process.env.DB_USER}`);
     console.log(`Database "${process.env.DB_NAME}" created successfully`);
 
     await pool.end();
