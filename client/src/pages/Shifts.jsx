@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../api'
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, startOfMonth, endOfMonth, eachDayOfInterval as eachDayOfMonth, isSameMonth, isToday } from 'date-fns'
 
-function Shifts({ onLogout }) {
+function Shifts() {
   const [shifts, setShifts] = useState([])
   const [employees, setEmployees] = useState([])
   const [user, setUser] = useState(null)

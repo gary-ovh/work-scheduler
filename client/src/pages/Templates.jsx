@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../api'
 
-function Templates({ onLogout }) {
+function Templates() {
   const [templates, setTemplates] = useState([])
   const [employees, setEmployees] = useState([])
   const [showModal, setShowModal] = useState(false)

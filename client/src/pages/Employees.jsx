@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../api'
 
-function Employees({ onLogout }) {
+function Employees() {
   const [employees, setEmployees] = useState([])
   const [user, setUser] = useState(null)
   const [showModal, setShowModal] = useState(false)

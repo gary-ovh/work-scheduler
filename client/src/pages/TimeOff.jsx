@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../api'
 import { format } from 'date-fns'
 
-function TimeOff({ onLogout }) {
+function TimeOff() {
   const [user, setUser] = useState(null)
   const [leaveBalance, setLeaveBalance] = useState(null)
   const [requests, setRequests] = useState([])

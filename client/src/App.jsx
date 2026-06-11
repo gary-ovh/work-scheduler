@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -48,39 +48,11 @@ function App() {
           } 
         >
           <Route index element={<DashboardHome />} />
+          <Route path="shifts" element={<Shifts />} />
+          <Route path="employees" element={<Employees />} />
+          <Route path="time-off" element={<TimeOff />} />
+          <Route path="templates" element={<Templates />} />
         </Route>
-        <Route 
-          path="/shifts" 
-          element={
-            isAuthenticated ? 
-            <Shifts onLogout={handleLogout} /> : 
-            <Navigate to="/login" />
-          } 
-        />
-        <Route 
-          path="/employees" 
-          element={
-            isAuthenticated ? 
-            <Employees onLogout={handleLogout} /> : 
-            <Navigate to="/login" />
-          } 
-        />
-        <Route 
-          path="/time-off" 
-          element={
-            isAuthenticated ? 
-            <TimeOff onLogout={handleLogout} /> : 
-            <Navigate to="/login" />
-          } 
-        />
-        <Route 
-          path="/templates" 
-          element={
-            isAuthenticated ? 
-            <Templates onLogout={handleLogout} /> : 
-            <Navigate to="/login" />
-          } 
-        />
         <Route path="/" element={<Navigate to="/dashboard" />} />
       </Routes>
     </Router>
