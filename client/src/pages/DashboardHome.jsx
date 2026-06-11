@@ -3,6 +3,8 @@ import api from '../api'
 import { format } from 'date-fns'
 
 function DashboardHome() {
+  const [user, setUser] = useState(null)
+  const [employee, setEmployee] = useState(null)
   const [stats, setStats] = useState({
     totalShifts: 0,
     totalEmployees: 0,
@@ -20,6 +22,7 @@ function DashboardHome() {
       const token = localStorage.getItem('token')
       const payload = JSON.parse(atob(token.split('.')[1]))
       const isAdminOrManager = payload.role === 'admin' || payload.role === 'manager'
+      setUser({ id: payload.id, role: payload.role })
 
       const [shiftsRes, employeesRes] = await Promise.all([
         api.get('/shifts'),
@@ -28,6 +31,10 @@ function DashboardHome() {
 
       const shifts = shiftsRes.data
       const employees = employeesRes.data
+
+      // Find current employee's record
+      const currentEmployee = employees.find(e => e.user_id === payload.id)
+      setEmployee(currentEmployee)
 
       // Only fetch requests for admin/manager
       let pending = []
@@ -42,20 +49,30 @@ function DashboardHome() {
       }
 
       const now = new Date()
-      const upcoming = shifts.filter(s => new Date(s.start_time) > now)
+      
+      // Filter shifts based on role
+      let employeeShifts = shifts
+      if (!isAdminOrManager && currentEmployee) {
+        // Employee sees only their own shifts
+        employeeShifts = shifts.filter(s => s.employee_id === currentEmployee.id)
+      }
+      
+      const upcoming = employeeShifts.filter(s => new Date(s.start_time) > now)
 
       setStats({
-        totalShifts: shifts.length,
-        totalEmployees: employees.length,
+        totalShifts: employeeShifts.length,
+        totalEmployees: isAdminOrManager ? employees.length : null,
         upcomingShifts: upcoming.length,
-        pendingRequests: pending.length
+        pendingRequests: isAdminOrManager ? pending.length : null
       })
 
-      setRecentShifts(shifts.slice(0, 5))
+      setRecentShifts(employeeShifts.slice(0, 5))
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error)
     }
   }
+
+  const isAdminOrManager = user?.role === 'admin' || user?.role === 'manager'
 
   return (
     <div>
@@ -71,29 +88,37 @@ function DashboardHome() {
           <h3 style={{ fontSize: '36px', color: '#007bff', marginBottom: '10px' }}>
             {stats.totalShifts}
           </h3>
-          <p style={{ color: '#666' }}>Total Shifts</p>
+          <p style={{ color: '#666' }}>
+            {isAdminOrManager ? 'Total Shifts' : 'My Shifts'}
+          </p>
         </div>
 
-        <div className="card" style={{ textAlign: 'center' }}>
-          <h3 style={{ fontSize: '36px', color: '#28a745', marginBottom: '10px' }}>
-            {stats.totalEmployees}
-          </h3>
-          <p style={{ color: '#666' }}>Employees</p>
-        </div>
+        {isAdminOrManager && (
+          <div className="card" style={{ textAlign: 'center' }}>
+            <h3 style={{ fontSize: '36px', color: '#28a745', marginBottom: '10px' }}>
+              {stats.totalEmployees}
+            </h3>
+            <p style={{ color: '#666' }}>Employees</p>
+          </div>
+        )}
 
         <div className="card" style={{ textAlign: 'center' }}>
           <h3 style={{ fontSize: '36px', color: '#ffc107', marginBottom: '10px' }}>
             {stats.upcomingShifts}
           </h3>
-          <p style={{ color: '#666' }}>Upcoming Shifts</p>
+          <p style={{ color: '#666' }}>
+            {isAdminOrManager ? 'Upcoming Shifts' : 'My Upcoming Shifts'}
+          </p>
         </div>
 
-        <div className="card" style={{ textAlign: 'center' }}>
-          <h3 style={{ fontSize: '36px', color: '#dc3545', marginBottom: '10px' }}>
-            {stats.pendingRequests}
-          </h3>
-          <p style={{ color: '#666' }}>Pending Requests</p>
-        </div>
+        {isAdminOrManager && (
+          <div className="card" style={{ textAlign: 'center' }}>
+            <h3 style={{ fontSize: '36px', color: '#dc3545', marginBottom: '10px' }}>
+              {stats.pendingRequests}
+            </h3>
+            <p style={{ color: '#666' }}>Pending Requests</p>
+          </div>
+        )}
       </div>
 
       <div className="card">
