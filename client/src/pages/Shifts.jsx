@@ -116,9 +116,15 @@ function Shifts({ onLogout }) {
       const end = endOfMonth(weekStart)
       return eachDayOfMonth({ start, end })
     } else if (viewMode === 'week') {
-      const start = show5DayWeek ? weekStart : startOfWeek(weekStart)
-      const end = show5DayWeek ? addWeeks(start, 1) : endOfWeek(weekStart)
-      return eachDayOfInterval({ start, end })
+      if (show5DayWeek) {
+        // Monday to Friday
+        const start = startOfWeek(weekStart, { weekStartsOn: 1 }) // Monday
+        return [start, addWeeks(start, 0).setDate(start.getDate() + 1), addWeeks(start, 0).setDate(start.getDate() + 2), addWeeks(start, 0).setDate(start.getDate() + 3), addWeeks(start, 0).setDate(start.getDate() + 4)]
+      } else {
+        const start = startOfWeek(weekStart)
+        const end = endOfWeek(weekStart)
+        return eachDayOfInterval({ start, end })
+      }
     } else {
       return [weekStart]
     }
@@ -191,7 +197,7 @@ function Shifts({ onLogout }) {
                 onChange={(e) => setShow5DayWeek(e.target.checked)}
                 style={{ width: 'auto' }}
               />
-              5-day week
+              Mon-Fri
             </label>
           )}
 
