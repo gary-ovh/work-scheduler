@@ -99,7 +99,7 @@ function TimeOff() {
       if (formData.leave_type === 'sick' || formData.leave_type === 'flexible') {
         if (formData.is_full_day) {
           // Calculate days from date range and convert to hours (8 hours per day)
-          const days = Math.round((new Date(formData.end_date) - new Date(formData.start_date)) / (1000 * 60 * 60 * 24)) + 1
+          const days = Math.round((new Date(formData.end_date + 'T00:00:00') - new Date(formData.start_date + 'T00:00:00')) / (1000 * 60 * 60 * 24)) + 1
           submitData.hours_requested = days * 8
         } else {
           submitData.hours_requested = parseFloat(formData.hours_requested)
@@ -108,6 +108,10 @@ function TimeOff() {
           }
         }
       }
+      
+      // Ensure dates are sent as-is without timezone conversion
+      submitData.start_date = formData.start_date
+      submitData.end_date = formData.end_date
       
       if (submitData.employee_id) {
         await api.post('/leave/requests', submitData)
