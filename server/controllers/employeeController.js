@@ -142,4 +142,23 @@ const deleteEmployee = async (req, res) => {
   }
 };
 
-module.exports = { getAllEmployees, getEmployeeById, createEmployee, updateEmployee, updateEmployeeRole, deleteEmployee };
+const getCurrentEmployee = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const result = await pool.query(
+      'SELECT e.*, u.email, u.role FROM employees e JOIN users u ON e.user_id = u.id WHERE e.user_id = $1',
+      [userId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Employee profile not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Get current employee error:', error);
+    res.status(500).json({ error: 'Failed to fetch employee profile' });
+  }
+};
+
+module.exports = { getAllEmployees, getEmployeeById, createEmployee, updateEmployee, updateEmployeeRole, deleteEmployee, getCurrentEmployee };

@@ -1,19 +1,34 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import api from '../api'
 
 function Dashboard({ onLogout }) {
   const location = useLocation()
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
+  const [userName, setUserName] = useState('')
 
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]))
-        setUser({ id: payload.id, role: payload.role })
+        setUser({ id: payload.id, role: payload.role, email: payload.email })
+        
+        // Fetch user's name from employees table
+        api.get('/employees/me')
+          .then(res => {
+            const employee = res.data
+            if (employee) {
+              setUserName(`${employee.first_name} ${employee.last_name}`)
+            } else {
+              setUserName(payload.email)
+            }
+          })
+          .catch(() => setUserName(payload.email))
       } catch (error) {
         console.error('Failed to decode token:', error)
+        setUserName('User')
       }
     }
   }, [])
@@ -28,6 +43,27 @@ function Dashboard({ onLogout }) {
 
   // Show back button on all pages except dashboard
   const showBackButton = location.pathname !== '/dashboard' && location.pathname !== '/'
+
+  // Get current user info from token
+  const getCurrentUserInfo = () => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        const employee = employees.find(e => e.user_id === payload.id)
+        return {
+          email: payload.email,
+          role: payload.role,
+          name: employee ? `${employee.first_name} ${employee.last_name}` : payload.email
+        }
+      } catch (error) {
+        console.error('Failed to parse user token:', error)
+      }
+    }
+    return null
+  }
+
+  const currentUser = getCurrentUserInfo()
 
   return (
     <div>
@@ -74,9 +110,14 @@ function Dashboard({ onLogout }) {
                 ⚙️ Settings
               </Link>
             </nav>
-            <button className="btn btn-danger" onClick={onLogout}>
-              Logout
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginRight: '15px' }}>
+              <span style={{ color: '#666', fontSize: '14px' }}>
+                👤 {userName}
+              </span>
+              <button className="btn btn-danger" onClick={onLogout}>
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </div>
