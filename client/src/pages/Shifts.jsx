@@ -12,7 +12,11 @@ function Shifts() {
   const [weekStart, setWeekStart] = useState(startOfWeek(new Date()))
   const [show5DayWeek, setShow5DayWeek] = useState(false)
   const [showVacation, setShowVacation] = useState(false)
+  const [showSick, setShowSick] = useState(false)
+  const [showFlexible, setShowFlexible] = useState(false)
   const [vacationRequests, setVacationRequests] = useState([])
+  const [sickRequests, setSickRequests] = useState([])
+  const [flexibleRequests, setFlexibleRequests] = useState([])
   const [formData, setFormData] = useState({
     employee_id: '',
     start_time: '',
@@ -33,19 +37,23 @@ function Shifts() {
       const payload = JSON.parse(atob(token.split('.')[1]))
       setUser({ id: payload.id, role: payload.role })
       
-      await Promise.all([fetchShifts(), fetchEmployees(), fetchVacationRequests()])
+      await Promise.all([fetchShifts(), fetchEmployees(), fetchLeaveRequests()])
     } catch (error) {
       console.error('Failed to fetch user data:', error)
     }
   }
 
-  const fetchVacationRequests = async () => {
+  const fetchLeaveRequests = async () => {
     try {
       const response = await api.get('/leave/requests?status=approved')
-      const vacations = response.data.filter(r => r.leave_type.toLowerCase() === 'vacation')
-      setVacationRequests(vacations)
+      const requests = response.data
+      
+      // Separate by leave type
+      setVacationRequests(requests.filter(r => r.leave_type.toLowerCase() === 'vacation'))
+      setSickRequests(requests.filter(r => r.leave_type.toLowerCase() === 'sick'))
+      setFlexibleRequests(requests.filter(r => r.leave_type.toLowerCase() === 'flexible'))
     } catch (error) {
-      console.error('Failed to fetch vacation requests:', error)
+      console.error('Failed to fetch leave requests:', error)
     }
   }
 
@@ -159,24 +167,25 @@ function Shifts() {
     return employee ? `${employee.first_name} ${employee.last_name}` : 'Unknown'
   }
 
-  const isEmployeeOnVacation = (employeeId, date) => {
-    if (!showVacation) return false
-    
+  const isEmployeeOnLeave = (employeeId, date, leaveType) => {
     const checkDate = format(date, 'yyyy-MM-dd')
-    const vacation = vacationRequests.find(v => {
+    let requests = []
+    
+    if (leaveType === 'vacation') requests = vacationRequests
+    else if (leaveType === 'sick') requests = sickRequests
+    else if (leaveType === 'flexible') requests = flexibleRequests
+    
+    const leave = requests.find(v => {
       if (!v || !v.start_date || !v.end_date) return false
       if (v.employee_id !== employeeId) return false
       if (v.status !== 'approved') return false
-      if (v.leave_type.toLowerCase() !== 'vacation') return false
       
-      // Extract date parts from ISO strings for comparison
       const startDate = v.start_date.toString().split('T')[0]
       const endDate = v.end_date.toString().split('T')[0]
       
-      // Compare date strings directly
       return checkDate >= startDate && checkDate <= endDate
     })
-    return !!vacation
+    return !!leave
   }
 
   const getVacationDates = (employeeId) => {
@@ -261,21 +270,45 @@ function Shifts() {
             </label>
           )}
 
-          {/* Show Vacation Toggle */}
-          <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '14px' }}>
-            <input
-              type="checkbox"
-              checked={showVacation}
-              onChange={(e) => {
-                setShowVacation(e.target.checked)
-                if (e.target.checked && vacationRequests.length === 0) {
-                  fetchVacationRequests()
-                }
-              }}
-              style={{ width: 'auto' }}
-            />
-            Show Vacation
-          </label>
+          {/* Show Leave Toggles */}
+          <div className="flex" style={{ gap: '15px', marginLeft: '15px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '14px' }}>
+              <input
+                type="checkbox"
+                checked={showVacation}
+                onChange={(e) => {
+                  setShowVacation(e.target.checked)
+                  if (e.target.checked && vacationRequests.length === 0) fetchLeaveRequests()
+                }}
+                style={{ width: 'auto' }}
+              />
+              🌴 Vacation
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '14px' }}>
+              <input
+                type="checkbox"
+                checked={showSick}
+                onChange={(e) => {
+                  setShowSick(e.target.checked)
+                  if (e.target.checked && sickRequests.length === 0) fetchLeaveRequests()
+                }}
+                style={{ width: 'auto' }}
+              />
+              🤒 Sick
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '14px' }}>
+              <input
+                type="checkbox"
+                checked={showFlexible}
+                onChange={(e) => {
+                  setShowFlexible(e.target.checked)
+                  if (e.target.checked && flexibleRequests.length === 0) fetchLeaveRequests()
+                }}
+                style={{ width: 'auto' }}
+              />
+              ⏰ Flexible
+            </label>
+          </div>
 
           {/* Navigation */}
           <div className="flex" style={{ alignItems: 'center', gap: '5px' }}>
@@ -407,25 +440,41 @@ function Shifts() {
                           </div>
                         ))}
                         
-                        {/* Show vacation indicator in month view */}
-                        {showVacation && (() => {
-                          const vacationEmployees = employees.filter(e => isEmployeeOnVacation(e.id, day))
-                          const remainingSlots = 3 - dayShifts.slice(0, 3).length
+                        {/* Show leave indicators in month view */}
+                        {(() => {
+                          const leaveEmployees = []
                           
-                          return vacationEmployees.slice(0, remainingSlots).map(employee => (
+                          if (showVacation) {
+                            employees.filter(e => isEmployeeOnLeave(e.id, day, 'vacation')).forEach(e => {
+                              leaveEmployees.push({ ...e, type: 'vacation', icon: '🌴', color: '#fff3cd', border: '#ffc107', text: '#856404' })
+                            })
+                          }
+                          if (showSick) {
+                            employees.filter(e => isEmployeeOnLeave(e.id, day, 'sick')).forEach(e => {
+                              leaveEmployees.push({ ...e, type: 'sick', icon: '🤒', color: '#ffe6e6', border: '#dc3545', text: '#721c24' })
+                            })
+                          }
+                          if (showFlexible) {
+                            employees.filter(e => isEmployeeOnLeave(e.id, day, 'flexible')).forEach(e => {
+                              leaveEmployees.push({ ...e, type: 'flexible', icon: '⏰', color: '#fff3e0', border: '#fd7e14', text: '#854d0e' })
+                            })
+                          }
+                          
+                          const remainingSlots = 3 - dayShifts.slice(0, 3).length
+                          return leaveEmployees.slice(0, remainingSlots).map(emp => (
                             <div 
-                              key={`vac-${employee.id}-${day.toISOString()}`}
+                              key={`leave-${emp.type}-${emp.id}-${day.toISOString()}`}
                               style={{
-                                backgroundColor: '#fff3cd',
-                                borderLeft: `3px solid #ffc107`,
+                                backgroundColor: emp.color,
+                                borderLeft: `3px solid ${emp.border}`,
                                 padding: '4px 6px',
                                 borderRadius: '3px',
-                                fontSize: '10px',
+                                fontSize: '9px',
                                 fontStyle: 'italic'
                               }}
                             >
-                              <div style={{ fontWeight: '600', color: '#856404' }}>
-                                🌴 {employee.first_name} {employee.last_name}
+                              <div style={{ fontWeight: '600', color: emp.text }}>
+                                {emp.icon} {emp.first_name} {emp.last_name}
                               </div>
                             </div>
                           ))
@@ -513,31 +562,41 @@ function Shifts() {
                       </div>
                     ))}
                     
-                    {/* Show employees on vacation */}
-                    {showVacation && employees.map(employee => {
-                      if (isEmployeeOnVacation(employee.id, day)) {
-                        return (
-                          <div 
-                            key={`vac-${employee.id}`}
-                            style={{
-                              backgroundColor: '#fff3cd',
-                              borderLeft: `3px solid #ffc107`,
-                              padding: '8px',
-                              borderRadius: '4px',
-                              fontSize: '12px',
-                              fontStyle: 'italic'
-                            }}
-                          >
-                            <div style={{ fontWeight: '600', color: '#856404' }}>
-                              🌴 {employee.first_name} {employee.last_name}
-                            </div>
-                            <div style={{ color: '#856404', fontSize: '11px' }}>
-                              On Vacation
-                            </div>
-                          </div>
-                        )
+                    {/* Show employees on leave */}
+                    {employees.map(employee => {
+                      const leaveEntries = []
+                      
+                      if (showVacation && isEmployeeOnLeave(employee.id, day, 'vacation')) {
+                        leaveEntries.push({ type: 'vacation', icon: '🌴', label: 'On Vacation', color: '#fff3cd', border: '#ffc107', text: '#856404' })
                       }
-                      return null
+                      if (showSick && isEmployeeOnLeave(employee.id, day, 'sick')) {
+                        leaveEntries.push({ type: 'sick', icon: '🤒', label: 'On Sick Leave', color: '#ffe6e6', border: '#dc3545', text: '#721c24' })
+                      }
+                      if (showFlexible && isEmployeeOnLeave(employee.id, day, 'flexible')) {
+                        leaveEntries.push({ type: 'flexible', icon: '⏰', label: 'On Flexible Leave', color: '#fff3e0', border: '#fd7e14', text: '#854d0e' })
+                      }
+                      
+                      return leaveEntries.map((leave, idx) => (
+                        <div 
+                          key={`leave-${leave.type}-${employee.id}-${day.toISOString()}`}
+                          style={{
+                            backgroundColor: leave.color,
+                            borderLeft: `3px solid ${leave.border}`,
+                            padding: '8px',
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                            fontStyle: 'italic',
+                            marginTop: idx > 0 ? '5px' : '0'
+                          }}
+                        >
+                          <div style={{ fontWeight: '600', color: leave.text }}>
+                            {leave.icon} {employee.first_name} {employee.last_name}
+                          </div>
+                          <div style={{ color: leave.text, fontSize: '11px' }}>
+                            {leave.label}
+                          </div>
+                        </div>
+                      ))
                     })}
                   </div>
                 </div>
