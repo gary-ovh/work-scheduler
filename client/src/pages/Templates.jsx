@@ -18,7 +18,8 @@ function Templates() {
     template_id: '',
     employee_id: '',
     date: '',
-    applyToWeek: false
+    applyToWeek: false,
+    applyToWeekdays: false
   })
 
   useEffect(() => {
@@ -73,18 +74,44 @@ function Templates() {
     e.preventDefault()
     
     try {
-      if (applyData.applyToWeek) {
+      if (applyData.applyToWeekdays) {
+        // Apply to Monday-Friday of the selected week
+        const weekStart = new Date(applyData.date)
+        const dayOfWeek = weekStart.getDay()
+        const diff = weekStart.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1) // Adjust to Monday
+        const monday = new Date(weekStart.setDate(diff))
+        
+        const promises = []
+        for (let i = 0; i < 5; i++) {
+          const shiftDate = new Date(monday)
+          shiftDate.setDate(monday.getDate() + i)
+          const dateStr = shiftDate.toISOString().split('T')[0]
+          
+          promises.push(
+            api.post('/templates/apply', {
+              template_id: applyData.template_id,
+              employee_id: applyData.employee_id,
+              date: dateStr
+            })
+          )
+        }
+        
+        await Promise.all(promises)
+        alert('Shifts created Monday-Friday!')
+      } else if (applyData.applyToWeek) {
         await api.post('/templates/apply-week', {
           template_id: applyData.template_id,
           employee_id: applyData.employee_id,
           week_start_date: applyData.date
         })
+        alert('Week of shifts created!')
       } else {
         await api.post('/templates/apply', {
           template_id: applyData.template_id,
           employee_id: applyData.employee_id,
           date: applyData.date
         })
+        alert('Shift created!')
       }
       
       setShowApplyModal(false)
@@ -92,9 +119,10 @@ function Templates() {
         template_id: '',
         employee_id: '',
         date: '',
-        applyToWeek: false
+        applyToWeek: false,
+        applyToWeekdays: false
       })
-      alert('Shift(s) created successfully!')
+      fetchTemplates()
     } catch (error) {
       console.error('Failed to apply template:', error)
       alert(error.response?.data?.error || 'Failed to apply template')
@@ -363,7 +391,7 @@ function Templates() {
 
               <div className="form-group">
                 <label>
-                  {applyData.applyToWeek ? 'Week Start Date' : 'Date'}
+                  {applyData.applyToWeek || applyData.applyToWeekdays ? 'Week Start Date' : 'Date'}
                 </label>
                 <input
                   type="date"
@@ -376,7 +404,7 @@ function Templates() {
               {applyData.applyToWeek && applyData.date && (
                 <div className="card" style={{ backgroundColor: '#f8f9fa', marginBottom: '15px' }}>
                   <p style={{ fontWeight: '600', marginBottom: '10px' }}>
-                    This will create shifts for the week of {getDayName(applyData.date)}:
+                    This will create shifts for the week starting {format(new Date(applyData.date), 'MMM dd, yyyy')}:
                   </p>
                   <ul style={{ paddingLeft: '20px', color: '#666', fontSize: '14px' }}>
                     {Array.from({ length: 7 }).map((_, i) => {
@@ -392,15 +420,52 @@ function Templates() {
                 </div>
               )}
 
+              {applyData.applyToWeekdays && applyData.date && (
+                <div className="card" style={{ backgroundColor: '#f8f9fa', marginBottom: '15px' }}>
+                  <p style={{ fontWeight: '600', marginBottom: '10px' }}>
+                    This will create shifts Monday-Friday for the week of {format(new Date(applyData.date), 'MMM dd, yyyy')}:
+                  </p>
+                  <ul style={{ paddingLeft: '20px', color: '#666', fontSize: '14px' }}>
+                    {(() => {
+                      const weekStart = new Date(applyData.date)
+                      const dayOfWeek = weekStart.getDay()
+                      const diff = weekStart.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
+                      const monday = new Date(weekStart.setDate(diff))
+                      return Array.from({ length: 5 }).map((_, i) => {
+                        const date = new Date(monday)
+                        date.setDate(monday.getDate() + i)
+                        return (
+                          <li key={i}>
+                            {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                          </li>
+                        )
+                      })
+                    })()}
+                  </ul>
+                </div>
+              )}
+
               <div className="form-group">
                 <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
                   <input
                     type="checkbox"
                     checked={applyData.applyToWeek}
-                    onChange={(e) => setApplyData({...applyData, applyToWeek: e.target.checked})}
+                    onChange={(e) => setApplyData({...applyData, applyToWeek: e.target.checked, applyToWeekdays: false})}
                     style={{ width: 'auto' }}
                   />
                   Apply to entire week (7 days)
+                </label>
+              </div>
+
+              <div className="form-group">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={applyData.applyToWeekdays}
+                    onChange={(e) => setApplyData({...applyData, applyToWeekdays: e.target.checked, applyToWeek: false})}
+                    style={{ width: 'auto' }}
+                  />
+                  Apply to Mon-Fri (weekdays only)
                 </label>
               </div>
 
@@ -422,7 +487,7 @@ function Templates() {
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  {applyData.applyToWeek ? 'Create Week of Shifts' : 'Create Shift'}
+                  {applyData.applyToWeekdays ? 'Create Mon-Fri Shifts' : applyData.applyToWeek ? 'Create Week of Shifts' : 'Create Shift'}
                 </button>
               </div>
             </form>

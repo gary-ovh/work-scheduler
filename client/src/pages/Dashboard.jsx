@@ -3,11 +3,24 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 function Dashboard({ onLogout }) {
   const location = useLocation()
   const navigate = useNavigate()
+  const [user, setUser] = useState(null)
+
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        setUser({ id: payload.id, role: payload.role })
+      } catch (error) {
+        console.error('Failed to decode token:', error)
+      }
+    }
+  }, [])
 
   const navItems = [
     { path: '/dashboard', label: 'Dashboard' },
     { path: '/dashboard/shifts', label: 'Shifts' },
-    { path: '/dashboard/templates', label: 'Templates' },
+    ...(user?.role === 'manager' || user?.role === 'admin' ? [{ path: '/dashboard/templates', label: 'Templates' }] : []),
     { path: '/dashboard/employees', label: 'Employees' },
     { path: '/dashboard/time-off', label: 'Time Off' }
   ]
