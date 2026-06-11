@@ -17,19 +17,32 @@ function DashboardHome() {
 
   const fetchDashboardData = async () => {
     try {
-      const [shiftsRes, employeesRes, requestsRes] = await Promise.all([
+      const token = localStorage.getItem('token')
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      const isAdminOrManager = payload.role === 'admin' || payload.role === 'manager'
+
+      const [shiftsRes, employeesRes] = await Promise.all([
         api.get('/shifts'),
-        api.get('/employees'),
-        api.get('/leave/requests')
+        api.get('/employees')
       ])
 
       const shifts = shiftsRes.data
       const employees = employeesRes.data
-      const requests = requestsRes.data
+
+      // Only fetch requests for admin/manager
+      let pending = []
+      if (isAdminOrManager) {
+        try {
+          const requestsRes = await api.get('/leave/requests')
+          const requests = requestsRes.data
+          pending = requests.filter(r => r.status === 'pending')
+        } catch (error) {
+          console.log('Could not fetch leave requests (expected for employees)')
+        }
+      }
 
       const now = new Date()
       const upcoming = shifts.filter(s => new Date(s.start_time) > now)
-      const pending = requests.filter(r => r.status === 'pending')
 
       setStats({
         totalShifts: shifts.length,

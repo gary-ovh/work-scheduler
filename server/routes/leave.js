@@ -8,6 +8,7 @@ router.use(authenticateToken);
 router.get('/balance/:employeeId', leaveController.getLeaveBalance);
 router.put('/balance/:employeeId', authorizeRole('manager', 'admin'), leaveController.updateLeaveBalance);
 
+// Managers can see all requests, employees can only see their own
 router.get('/requests', authorizeRole('manager', 'admin'), leaveController.getAllTimeOffRequests);
 router.get('/requests/my', leaveController.getAllTimeOffRequests);
 router.get('/requests/:id', leaveController.getTimeOffRequestById);
