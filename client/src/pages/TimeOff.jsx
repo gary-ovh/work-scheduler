@@ -315,7 +315,8 @@ function TimeOff() {
               <th>Leave Type</th>
               <th>Start Date</th>
               <th>End Date</th>
-              <th>Days</th>
+              <th>Hours/Days</th>
+              <th>Reason</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -327,7 +328,14 @@ function TimeOff() {
                 <td style={{ textTransform: 'capitalize' }}>{request.leave_type}</td>
                 <td>{format(new Date(request.start_date), 'MMM dd, yyyy')}</td>
                 <td>{format(new Date(request.end_date), 'MMM dd, yyyy')}</td>
-                <td>{request.days_requested}</td>
+                <td>
+                  {request.leave_type.toLowerCase() === 'vacation'
+                    ? `${request.days_requested / 8} days`
+                    : `${request.days_requested} hrs`}
+                </td>
+                <td style={{ maxWidth: '200px', fontSize: '13px' }}>
+                  {request.reason || '-'}
+                </td>
                 <td>
                   <span style={{
                     padding: '4px 8px',
