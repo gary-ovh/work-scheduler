@@ -101,6 +101,14 @@ const setupDatabase = async () => {
       [empId, 10, 5, 3, currentYear]
     );
 
+    console.log('Creating sample teams...');
+    await dbPool.query(
+      `INSERT INTO teams (name, description, color) VALUES
+       ('Morning Team', 'Early morning shift team', '#4CAF50'),
+       ('Evening Team', 'Evening shift team', '#FF9800'),
+       ('Weekend Team', 'Weekend coverage team', '#9C27B0')`
+    );
+
     console.log('Creating sample shift templates...');
     await dbPool.query(
       `INSERT INTO shift_templates (name, start_time, end_time, position, color, created_by) VALUES

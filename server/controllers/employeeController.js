@@ -3,7 +3,16 @@ const pool = require('../config/database');
 
 const getAllEmployees = async (req, res) => {
   try {
-    const result = await pool.query('SELECT e.*, u.email, u.role FROM employees e JOIN users u ON e.user_id = u.id ORDER BY e.last_name ASC');
+    const { team_id } = req.query;
+    let query = 'SELECT e.*, u.email, u.role, t.name as team_name, t.color as team_color FROM employees e JOIN users u ON e.user_id = u.id LEFT JOIN teams t ON e.team_id = t.id ORDER BY e.last_name ASC';
+    
+    if (team_id) {
+      query = 'SELECT e.*, u.email, u.role, t.name as team_name, t.color as team_color FROM employees e JOIN users u ON e.user_id = u.id LEFT JOIN teams t ON e.team_id = t.id WHERE e.team_id = $1 ORDER BY e.last_name ASC';
+      const result = await pool.query(query, [team_id]);
+      return res.json(result.rows);
+    }
+    
+    const result = await pool.query(query);
     res.json(result.rows);
   } catch (error) {
     console.error('Get employees error:', error);
@@ -29,7 +38,7 @@ const getEmployeeById = async (req, res) => {
 
 const createEmployee = async (req, res) => {
   try {
-    const { user_id, first_name, last_name, phone, position, email, password, role } = req.body;
+    const { user_id, first_name, last_name, phone, position, email, password, role, team_id } = req.body;
 
     let userId = user_id;
 
@@ -48,8 +57,8 @@ const createEmployee = async (req, res) => {
     }
 
     const result = await pool.query(
-      'INSERT INTO employees (user_id, first_name, last_name, phone, position) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [userId, first_name, last_name, phone, position]
+      'INSERT INTO employees (user_id, first_name, last_name, phone, position, team_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [userId, first_name, last_name, phone, position, team_id]
     );
 
     res.status(201).json(result.rows[0]);
@@ -62,11 +71,11 @@ const createEmployee = async (req, res) => {
 const updateEmployee = async (req, res) => {
   try {
     const { id } = req.params;
-    const { first_name, last_name, phone, position } = req.body;
+    const { first_name, last_name, phone, position, team_id } = req.body;
 
     const result = await pool.query(
-      'UPDATE employees SET first_name = COALESCE($1, first_name), last_name = COALESCE($2, last_name), phone = COALESCE($3, phone), position = COALESCE($4, position), updated_at = CURRENT_TIMESTAMP WHERE id = $5 RETURNING *',
-      [first_name, last_name, phone, position, id]
+      'UPDATE employees SET first_name = COALESCE($1, first_name), last_name = COALESCE($2, last_name), phone = COALESCE($3, phone), position = COALESCE($4, position), team_id = COALESCE($5, team_id), updated_at = CURRENT_TIMESTAMP WHERE id = $6 RETURNING *',
+      [first_name, last_name, phone, position, team_id, id]
     );
 
     if (result.rows.length === 0) {

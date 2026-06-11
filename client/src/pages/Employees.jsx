@@ -3,6 +3,7 @@ import api from '../api'
 
 function Employees() {
   const [employees, setEmployees] = useState([])
+  const [teams, setTeams] = useState([])
   const [user, setUser] = useState(null)
   const [showModal, setShowModal] = useState(false)
   const [showResetModal, setShowResetModal] = useState(false)
@@ -16,14 +17,25 @@ function Employees() {
     position: '',
     email: '',
     password: '',
-    role: 'employee'
+    role: 'employee',
+    team_id: ''
   })
 
   const canEdit = user?.role === 'manager' || user?.role === 'admin'
 
   useEffect(() => {
     fetchUserData()
+    fetchTeams()
   }, [])
+
+  const fetchTeams = async () => {
+    try {
+      const res = await api.get('/teams')
+      setTeams(res.data)
+    } catch (error) {
+      console.error('Failed to fetch teams:', error)
+    }
+  }
 
   const fetchUserData = async () => {
     try {
@@ -50,9 +62,15 @@ function Employees() {
     
     try {
       if (editingEmployee) {
-        await api.put(`/employees/${editingEmployee.id}`, formData)
+        await api.put(`/employees/${editingEmployee.id}`, {
+          ...formData,
+          team_id: formData.team_id || null
+        })
       } else {
-        await api.post('/employees', formData)
+        await api.post('/employees', {
+          ...formData,
+          team_id: formData.team_id || null
+        })
       }
       
       setShowModal(false)
@@ -62,7 +80,10 @@ function Employees() {
         last_name: '',
         phone: '',
         position: '',
-        hourly_rate: ''
+        email: '',
+        password: '',
+        role: 'employee',
+        team_id: ''
       })
       fetchEmployees()
     } catch (error) {
@@ -79,7 +100,8 @@ function Employees() {
       position: employee.position || '',
       email: employee.email || '',
       password: '',
-      role: employee.role || 'employee'
+      role: employee.role || 'employee',
+      team_id: employee.team_id || ''
     })
     setShowModal(true)
   }
@@ -162,6 +184,7 @@ function Employees() {
               <th>Email</th>
               <th>Position</th>
               <th>Phone</th>
+              <th>Team</th>
               <th>Role</th>
               <th>Actions</th>
             </tr>
@@ -173,6 +196,21 @@ function Employees() {
                 <td>{employee.email || '-'}</td>
                 <td>{employee.position || '-'}</td>
                 <td>{employee.phone || '-'}</td>
+                <td>
+                  {employee.team_name ? (
+                    <span style={{
+                      padding: '3px 8px',
+                      borderRadius: '4px',
+                      backgroundColor: employee.team_color + '20',
+                      color: employee.team_color,
+                      fontSize: '12px'
+                    }}>
+                      {employee.team_name}
+                    </span>
+                  ) : (
+                    <span style={{ color: '#999' }}>Unassigned</span>
+                  )}
+                </td>
                 <td>
                   <span style={{
                     padding: '3px 8px',
@@ -366,6 +404,20 @@ function Employees() {
                 />
               </div>
 
+              <div className="form-group">
+                <label>Team</label>
+                <select
+                  name="team_id"
+                  value={formData.team_id}
+                  onChange={(e) => setFormData({ ...formData, team_id: e.target.value })}
+                >
+                  <option value="">Unassigned</option>
+                  {teams.map(team => (
+                    <option key={team.id} value={team.id}>{team.name}</option>
+                  ))}
+                </select>
+              </div>
+
               <div className="flex" style={{ justifyContent: 'flex-end', gap: '10px' }}>
                 <button 
                   type="button" 
@@ -378,7 +430,10 @@ function Employees() {
                       last_name: '',
                       phone: '',
                       position: '',
-                      hourly_rate: ''
+                      email: '',
+                      password: '',
+                      role: 'employee',
+                      team_id: ''
                     })
                   }}
                   style={{ backgroundColor: '#6c757d', color: 'white' }}

@@ -6,6 +6,16 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS teams (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL UNIQUE,
+  description TEXT,
+  color VARCHAR(7) DEFAULT '#007bff',
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS employees (
   id SERIAL PRIMARY KEY,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -13,6 +23,7 @@ CREATE TABLE IF NOT EXISTS employees (
   last_name VARCHAR(100) NOT NULL,
   phone VARCHAR(20),
   position VARCHAR(100),
+  team_id INTEGER REFERENCES teams(id) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -83,3 +94,5 @@ CREATE INDEX idx_availability_employee ON availability(employee_id);
 CREATE INDEX idx_time_off_employee ON time_off_requests(employee_id);
 CREATE INDEX idx_time_off_status ON time_off_requests(status);
 CREATE INDEX idx_leave_balances_employee ON leave_balances(employee_id, year);
+CREATE INDEX idx_employees_team ON employees(team_id);
+CREATE INDEX idx_teams_active ON teams(is_active);
