@@ -264,19 +264,114 @@ const reviewTimeOffRequest = async (req, res) => {
 const deleteTimeOffRequest = async (req, res) => {
   try {
     const { id } = req.params;
+    const user = req.user;
+
+    // Get the request details first
+    const requestResult = await pool.query(
+      'SELECT * FROM time_off_requests WHERE id = $1',
+      [id]
+    );
+
+    if (requestResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+
+    const request = requestResult.rows[0];
+
+    // Check permissions - employees can only delete their own requests
+    if (user.role !== 'admin' && user.role !== 'manager') {
+      if (request.employee_id !== user.employee_id) {
+        return res.status(403).json({ error: 'You can only cancel your own requests' });
+      }
+    }
+
+    // If the request was approved, return the leave days to the balance
+    if (request.status === 'approved') {
+      const currentYear = new Date().getFullYear();
+      const balanceResult = await pool.query(
+        'SELECT * FROM leave_balances WHERE employee_id = $1 AND year = $2',
+        [request.employee_id, currentYear]
+      );
+
+      if (balanceResult.rows.length > 0) {
+        const leaveTypeField = `${request.leave_type.toLowerCase()}_days`;
+        await pool.query(
+          `UPDATE leave_balances 
+           SET ${leaveTypeField} = ${leaveTypeField} + $1, updated_at = CURRENT_TIMESTAMP
+           WHERE employee_id = $2 AND year = $3`,
+          [request.days_requested, request.employee_id, currentYear]
+        );
+      }
+    }
+
     const result = await pool.query(
       'DELETE FROM time_off_requests WHERE id = $1 RETURNING *',
       [id]
     );
 
-    if (result.rows.length === 0) {
+    res.json({ message: 'Time off request cancelled successfully' });
+  } catch (error) {
+    console.error('Delete time off request error:', error);
+    res.status(500).json({ error: 'Failed to cancel time off request' });
+  }
+};
+
+const cancelTimeOffRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = req.user;
+
+    // Get the request details first
+    const requestResult = await pool.query(
+      'SELECT * FROM time_off_requests WHERE id = $1',
+      [id]
+    );
+
+    if (requestResult.rows.length === 0) {
       return res.status(404).json({ error: 'Request not found' });
     }
 
-    res.json({ message: 'Time off request deleted successfully' });
+    const request = requestResult.rows[0];
+
+    // Check permissions - employees can only cancel their own requests
+    if (user.role !== 'admin' && user.role !== 'manager') {
+      if (request.employee_id !== user.employee_id) {
+        return res.status(403).json({ error: 'You can only cancel your own requests' });
+      }
+    }
+
+    // If the request was approved, return the leave days to the balance
+    if (request.status === 'approved') {
+      const currentYear = new Date().getFullYear();
+      const balanceResult = await pool.query(
+        'SELECT * FROM leave_balances WHERE employee_id = $1 AND year = $2',
+        [request.employee_id, currentYear]
+      );
+
+      if (balanceResult.rows.length > 0) {
+        const leaveTypeField = `${request.leave_type.toLowerCase()}_days`;
+        await pool.query(
+          `UPDATE leave_balances 
+           SET ${leaveTypeField} = ${leaveTypeField} + $1, updated_at = CURRENT_TIMESTAMP
+           WHERE employee_id = $2 AND year = $3`,
+          [request.days_requested, request.employee_id, currentYear]
+        );
+      }
+    }
+
+    // Update status to cancelled instead of deleting
+    const result = await pool.query(
+      `UPDATE time_off_requests 
+       SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1
+       RETURNING *`,
+      [id]
+    );
+
+    res.json({ message: 'Time off request cancelled successfully', request: result.rows[0] });
   } catch (error) {
-    console.error('Delete time off request error:', error);
-    res.status(500).json({ error: 'Failed to delete time off request' });
+    console.error('Cancel time off request error:', error);
+    res.status(500).json({ error: 'Failed to cancel time off request' });
   }
 };
 

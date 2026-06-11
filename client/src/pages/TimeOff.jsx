@@ -120,12 +120,13 @@ function TimeOff() {
   }
 
   const handleDelete = async (id) => {
-    if (confirm('Are you sure you want to delete this request?')) {
+    if (confirm('Are you sure you want to cancel this time off request? If approved, the days will be returned to your balance.')) {
       try {
-        await api.delete(`/leave/requests/${id}`)
+        await api.put(`/leave/requests/${id}/cancel`)
         fetchUserData()
       } catch (error) {
-        console.error('Failed to delete request:', error)
+        console.error('Failed to cancel request:', error)
+        alert(error.response?.data?.error || 'Failed to cancel request')
       }
     }
   }
@@ -173,6 +174,7 @@ function TimeOff() {
     switch (status) {
       case 'approved': return '#28a745'
       case 'denied': return '#dc3545'
+      case 'cancelled': return '#6c757d'
       case 'pending': return '#ffc107'
       default: return '#6c757d'
     }
@@ -313,14 +315,20 @@ function TimeOff() {
                       </button>
                     </>
                   )}
-                  {request.status === 'pending' && (
+                  {(request.status === 'pending' || request.status === 'approved') && (
                     <button 
                       className="btn btn-danger" 
                       onClick={() => handleDelete(request.id)}
                       style={{ padding: '4px 8px', fontSize: '12px' }}
                     >
-                      Withdraw
+                      Cancel
                     </button>
+                  )}
+                  {request.status === 'cancelled' && (
+                    <span style={{ color: '#999', fontSize: '12px' }}>Cancelled</span>
+                  )}
+                  {request.status === 'denied' && (
+                    <span style={{ color: '#999', fontSize: '12px' }}>Denied</span>
                   )}
                 </td>
               </tr>

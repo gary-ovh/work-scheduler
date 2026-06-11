@@ -14,6 +14,7 @@ router.get('/requests/my', leaveController.getAllTimeOffRequests);
 router.get('/requests/:id', leaveController.getTimeOffRequestById);
 router.post('/requests', leaveController.createTimeOffRequest);
 router.put('/requests/:id/review', authorizeRole('manager', 'admin'), leaveController.reviewTimeOffRequest);
-router.delete('/requests/:id', authorizeRole('manager', 'admin'), leaveController.deleteTimeOffRequest);
+router.put('/requests/:id/cancel', leaveController.cancelTimeOffRequest);
+router.delete('/requests/:id', leaveController.deleteTimeOffRequest);
 
 module.exports = router;
