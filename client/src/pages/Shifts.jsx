@@ -377,16 +377,15 @@ function Shifts() {
                 >
                   <div style={{ 
                     fontWeight: isToday(day) ? 'bold' : '600',
-                    color: isToday(day) ? '#007bff' : '#333',
                     marginBottom: '10px',
                     textAlign: 'center',
                     padding: '5px',
                     backgroundColor: isToday(day) ? '#007bff' : '#f8f9fa',
                     borderRadius: '5px',
-                    color: isToday(day) ? 'white' : '#333'
+                    fontSize: '16px'
                   }}>
-                    <div style={{ fontSize: '16px' }}>{format(day, 'EEEE')}</div>
-                    <div style={{ fontSize: '24px' }}>{format(day, 'd')}</div>
+                    <div style={{ fontSize: '16px', color: isToday(day) ? 'white' : '#333' }}>{format(day, 'EEEE')}</div>
+                    <div style={{ fontSize: '24px', color: isToday(day) ? 'white' : '#333' }}>{format(day, 'd')}</div>
                   </div>
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
