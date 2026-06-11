@@ -119,7 +119,12 @@ function Shifts({ onLogout }) {
       if (show5DayWeek) {
         // Monday to Friday
         const start = startOfWeek(weekStart, { weekStartsOn: 1 }) // Monday
-        return [start, addWeeks(start, 0).setDate(start.getDate() + 1), addWeeks(start, 0).setDate(start.getDate() + 2), addWeeks(start, 0).setDate(start.getDate() + 3), addWeeks(start, 0).setDate(start.getDate() + 4)]
+        const monday = start
+        const tuesday = new Date(start); tuesday.setDate(start.getDate() + 1)
+        const wednesday = new Date(start); wednesday.setDate(start.getDate() + 2)
+        const thursday = new Date(start); thursday.setDate(start.getDate() + 3)
+        const friday = new Date(start); friday.setDate(start.getDate() + 4)
+        return [monday, tuesday, wednesday, thursday, friday]
       } else {
         const start = startOfWeek(weekStart)
         const end = endOfWeek(weekStart)
