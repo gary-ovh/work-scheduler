@@ -160,10 +160,11 @@ function Shifts({ onLogout }) {
 
   const goToToday = () => {
     const today = new Date()
+    
     if (viewMode === 'month') {
       setWeekStart(startOfMonth(today))
     } else if (viewMode === 'week') {
-      setWeekStart(startOfWeek(today))
+      setWeekStart(startOfWeek(today, { weekStartsOn: 0 }))
     } else {
       setWeekStart(today)
     }
