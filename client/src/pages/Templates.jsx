@@ -431,10 +431,11 @@ function Templates() {
                   </p>
                   <ul style={{ paddingLeft: '20px', color: '#666', fontSize: '14px' }}>
                     {(() => {
-                      const weekStart = new Date(applyData.date)
-                      const dayOfWeek = weekStart.getDay()
-                      const diff = weekStart.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
-                      const monday = new Date(weekStart.setDate(diff))
+                      const selectedDate = new Date(applyData.date)
+                      const dayOfWeek = selectedDate.getDay()
+                      const daysBack = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+                      const monday = new Date(selectedDate)
+                      monday.setDate(selectedDate.getDate() - daysBack)
                       return Array.from({ length: 5 }).map((_, i) => {
                         const date = new Date(monday)
                         date.setDate(monday.getDate() + i)
