@@ -335,7 +335,13 @@ const cancelTimeOffRequest = async (req, res) => {
 
     // Check permissions - employees can only cancel their own requests
     if (user.role !== 'admin' && user.role !== 'manager') {
-      if (request.employee_id !== user.employee_id) {
+      // Get the employee_id for this user
+      const empResult = await pool.query(
+        'SELECT id FROM employees WHERE user_id = $1',
+        [user.id]
+      );
+      
+      if (empResult.rows.length === 0 || empResult.rows[0].id !== request.employee_id) {
         return res.status(403).json({ error: 'You can only cancel your own requests' });
       }
     }
