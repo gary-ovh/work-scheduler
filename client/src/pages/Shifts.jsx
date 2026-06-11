@@ -163,13 +163,15 @@ function Shifts() {
     if (!showVacation) return false
     
     const checkDate = format(date, 'yyyy-MM-dd')
-    const vacation = vacationRequests.find(v => 
-      v.employee_id === employeeId &&
-      v.status === 'approved' &&
-      v.leave_type.toLowerCase() === 'vacation' &&
-      checkDate >= v.start_date &&
-      checkDate <= v.end_date
-    )
+    const vacation = vacationRequests.find(v => {
+      if (!v || !v.start_date || !v.end_date) return false
+      if (v.employee_id !== employeeId) return false
+      if (v.status !== 'approved') return false
+      if (v.leave_type.toLowerCase() !== 'vacation') return false
+      
+      // Compare date strings directly
+      return checkDate >= v.start_date && checkDate <= v.end_date
+    })
     return !!vacation
   }
 

@@ -331,20 +331,42 @@ function TimeOff() {
                 <td>{request.first_name} {request.last_name}</td>
                 <td style={{ textTransform: 'capitalize' }}>{request.leave_type}</td>
                 <td>
-                  {request.start_date && request.start_date.length === 10
-                    ? (() => {
-                        const [year, month, day] = request.start_date.split('-').map(Number)
+                  {request.start_date ? (() => {
+                    try {
+                      // Handle various date formats from backend
+                      const dateStr = request.start_date.toString()
+                      if (dateStr.length === 10 && dateStr.includes('-')) {
+                        const [year, month, day] = dateStr.split('-').map(Number)
                         return format(new Date(year, month - 1, day), 'MMM dd, yyyy')
-                      })()
-                    : '-'}
+                      }
+                      // Fallback for ISO format
+                      const date = new Date(dateStr)
+                      if (!isNaN(date.getTime())) {
+                        return format(date, 'MMM dd, yyyy')
+                      }
+                    } catch (e) {
+                      console.error('Date parse error:', e)
+                    }
+                    return '-'
+                  })() : '-'}
                 </td>
                 <td>
-                  {request.end_date && request.end_date.length === 10
-                    ? (() => {
-                        const [year, month, day] = request.end_date.split('-').map(Number)
+                  {request.end_date ? (() => {
+                    try {
+                      const dateStr = request.end_date.toString()
+                      if (dateStr.length === 10 && dateStr.includes('-')) {
+                        const [year, month, day] = dateStr.split('-').map(Number)
                         return format(new Date(year, month - 1, day), 'MMM dd, yyyy')
-                      })()
-                    : '-'}
+                      }
+                      const date = new Date(dateStr)
+                      if (!isNaN(date.getTime())) {
+                        return format(date, 'MMM dd, yyyy')
+                      }
+                    } catch (e) {
+                      console.error('Date parse error:', e)
+                    }
+                    return '-'
+                  })() : '-'}
                 </td>
                 <td>
                   {request.leave_type && request.leave_type.toLowerCase() === 'vacation'
