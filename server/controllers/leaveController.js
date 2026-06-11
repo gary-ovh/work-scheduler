@@ -61,9 +61,9 @@ const updateLeaveBalance = async (req, res) => {
 
 const createTimeOffRequest = async (req, res) => {
   try {
-    const { employee_id, start_date, end_date, leave_type, reason } = req.body;
+    const { employee_id, start_date, end_date, leave_type, reason, hours_requested } = req.body;
 
-    console.log('Creating time off request:', { employee_id, start_date, end_date, leave_type, reason });
+    console.log('Creating time off request:', { employee_id, start_date, end_date, leave_type, reason, hours_requested });
 
     if (!employee_id || !start_date || !end_date || !leave_type) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -76,10 +76,18 @@ const createTimeOffRequest = async (req, res) => {
       return res.status(400).json({ error: 'End date must be after start date' });
     }
 
-    const daysRequested = (endDate - startDate) / (1000 * 60 * 60 * 24) + 1;
+    // Calculate days or use hours
+    let daysRequested = (endDate - startDate) / (1000 * 60 * 60 * 24) + 1;
+    let hoursRequested = hours_requested ? parseFloat(hours_requested) : (daysRequested * 8);
+
+    // For vacation, use days. For sick/flexible, use hours
+    if (leave_type.toLowerCase() === 'vacation') {
+      hoursRequested = daysRequested * 8;
+    }
+
     const currentYear = startDate.getFullYear();
 
-    console.log('Days requested:', daysRequested, 'Current year:', currentYear);
+    console.log('Days requested:', daysRequested, 'Hours requested:', hoursRequested, 'Current year:', currentYear);
 
     const balanceResult = await pool.query(
       'SELECT * FROM leave_balances WHERE employee_id = $1 AND year = $2',
@@ -95,27 +103,34 @@ const createTimeOffRequest = async (req, res) => {
     }
 
     const balance = balanceResult.rows[0];
-    let availableDays = 0;
+    let availableHours = 0;
 
     switch (leave_type.toLowerCase()) {
       case 'vacation':
-        availableDays = parseFloat(balance.vacation_days);
+        availableHours = parseFloat(balance.vacation_days) * 8; // Convert days to hours
         break;
       case 'sick':
-        availableDays = parseFloat(balance.sick_days);
+        availableHours = parseFloat(balance.sick_days); // Already in hours
         break;
       case 'flexible':
-        availableDays = parseFloat(balance.flexible_days);
+        availableHours = parseFloat(balance.flexible_days); // Already in hours
         break;
       default:
         return res.status(400).json({ error: 'Invalid leave type' });
     }
 
-    console.log(`Available ${leave_type} days:`, availableDays);
+    console.log(`Available ${leave_type} hours:`, availableHours);
 
-    if (daysRequested > availableDays) {
+    if (hoursRequested > availableHours) {
+      const displayAvailable = leave_type.toLowerCase() === 'vacation' 
+        ? `${(availableHours / 8).toFixed(1)} days` 
+        : `${availableHours} hours`;
+      const displayRequested = leave_type.toLowerCase() === 'vacation'
+        ? `${daysRequested} days`
+        : `${hoursRequested} hours`;
+      
       return res.status(400).json({ 
-        error: `Insufficient ${leave_type.toLowerCase()} days balance. Available: ${availableDays}, Requested: ${daysRequested}` 
+        error: `Insufficient ${leave_type.toLowerCase()} balance. Available: ${displayAvailable}, Requested: ${displayRequested}` 
       });
     }
 
@@ -123,7 +138,7 @@ const createTimeOffRequest = async (req, res) => {
       `INSERT INTO time_off_requests 
        (employee_id, start_date, end_date, leave_type, days_requested, reason) 
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [employee_id, start_date, end_date, leave_type, daysRequested, reason]
+      [employee_id, start_date, end_date, leave_type, hoursRequested, reason]
     );
 
     console.log('Request created:', result.rows[0]);
@@ -346,7 +361,7 @@ const cancelTimeOffRequest = async (req, res) => {
       }
     }
 
-    // If the request was approved, return the leave days to the balance
+    // If the request was approved, return the leave hours/days to the balance
     if (request.status === 'approved') {
       const currentYear = new Date().getFullYear();
       const balanceResult = await pool.query(
@@ -356,11 +371,18 @@ const cancelTimeOffRequest = async (req, res) => {
 
       if (balanceResult.rows.length > 0) {
         const leaveTypeField = `${request.leave_type.toLowerCase()}_days`;
+        
+        // For vacation, convert hours back to days (1 day = 8 hours)
+        // For sick/flexible, hours are stored directly
+        const hoursToReturn = request.leave_type.toLowerCase() === 'vacation' 
+          ? request.days_requested / 8  // Convert back to days
+          : request.days_requested;  // Already in hours
+        
         await pool.query(
           `UPDATE leave_balances 
            SET ${leaveTypeField} = ${leaveTypeField} + $1, updated_at = CURRENT_TIMESTAMP
            WHERE employee_id = $2 AND year = $3`,
-          [request.days_requested, request.employee_id, currentYear]
+          [hoursToReturn, request.employee_id, currentYear]
         );
       }
     }

@@ -15,7 +15,8 @@ function TimeOff() {
     start_date: '',
     end_date: '',
     leave_type: 'vacation',
-    reason: ''
+    reason: '',
+    hours_requested: ''
   })
   const [balanceFormData, setBalanceFormData] = useState({
     vacation_days: '',
@@ -69,6 +70,12 @@ function TimeOff() {
       setLeaveBalance(response.data)
     } catch (error) {
       console.error('Failed to fetch leave balance:', error)
+    }
+  }
+
+  const handleRefreshBalance = () => {
+    if (selectedEmployee) {
+      fetchLeaveBalance(selectedEmployee.id)
     }
   }
 
@@ -219,7 +226,17 @@ function TimeOff() {
 
       {leaveBalance && (
         <div className="card mb-2">
-          <h3>Leave Balance - {selectedEmployee?.first_name || 'Current'} {selectedEmployee?.last_name || ''}</h3>
+          <div className="flex justify-between mb-2">
+            <h3>Leave Balance - {selectedEmployee?.first_name || 'Current'} {selectedEmployee?.last_name || ''}</h3>
+            <button 
+              className="btn" 
+              onClick={handleRefreshBalance}
+              title="Refresh balance"
+              style={{ padding: '6px 12px', fontSize: '13px' }}
+            >
+              🔄 Refresh
+            </button>
+          </div>
           <div style={{ 
             display: 'grid', 
             gridTemplateColumns: 'repeat(3, 1fr)', 
@@ -236,6 +253,9 @@ function TimeOff() {
               <p style={{ fontSize: '32px', fontWeight: 'bold', color: '#1976d2' }}>
                 {leaveBalance.vacation_days}
               </p>
+              <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                {(leaveBalance.vacation_days * 8).toFixed(0)} hours
+              </p>
             </div>
             <div style={{ 
               padding: '20px', 
@@ -243,9 +263,12 @@ function TimeOff() {
               borderRadius: '8px',
               textAlign: 'center'
             }}>
-              <h4 style={{ color: '#d32f2f', marginBottom: '10px' }}>Sick Days</h4>
+              <h4 style={{ color: '#d32f2f', marginBottom: '10px' }}>Sick Hours</h4>
               <p style={{ fontSize: '32px', fontWeight: 'bold', color: '#d32f2f' }}>
                 {leaveBalance.sick_days}
+              </p>
+              <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                {(leaveBalance.sick_days / 8).toFixed(1)} days
               </p>
             </div>
             <div style={{ 
@@ -254,9 +277,12 @@ function TimeOff() {
               borderRadius: '8px',
               textAlign: 'center'
             }}>
-              <h4 style={{ color: '#f57c00', marginBottom: '10px' }}>Flexible Days</h4>
+              <h4 style={{ color: '#f57c00', marginBottom: '10px' }}>Flexible Hours</h4>
               <p style={{ fontSize: '32px', fontWeight: 'bold', color: '#f57c00' }}>
                 {leaveBalance.flexible_days}
+              </p>
+              <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                {(leaveBalance.flexible_days / 8).toFixed(1)} days
               </p>
             </div>
           </div>
@@ -377,6 +403,117 @@ function TimeOff() {
                   </select>
                 </div>
               )}
+
+              <div className="form-group">
+                <label>Leave Type</label>
+                <select
+                  name="leave_type"
+                  value={formData.leave_type}
+                  onChange={(e) => setFormData({...formData, leave_type: e.target.value})}
+                  required
+                >
+                  <option value="vacation">Vacation</option>
+                  <option value="sick">Sick</option>
+                  <option value="flexible">Flexible</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Start Date</label>
+                <input
+                  type="date"
+                  name="start_date"
+                  value={formData.start_date}
+                  onChange={(e) => setFormData({...formData, start_date: e.target.value})}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>End Date</label>
+                <input
+                  type="date"
+                  name="end_date"
+                  value={formData.end_date}
+                  onChange={(e) => setFormData({...formData, end_date: e.target.value})}
+                  required
+                />
+              </div>
+
+              {(formData.leave_type === 'sick' || formData.leave_type === 'flexible') && (
+                <div className="form-group">
+                  <label>Hours Requested</label>
+                  <input
+                    type="number"
+                    name="hours_requested"
+                    value={formData.hours_requested}
+                    onChange={(e) => setFormData({...formData, hours_requested: e.target.value})}
+                    min="1"
+                    step="0.5"
+                    placeholder="e.g., 4, 8, 12"
+                    required
+                  />
+                  <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                    {formData.hours_requested ? `${(formData.hours_requested / 8).toFixed(1)} days` : ''}
+                  </p>
+                </div>
+              )}
+
+              {formData.leave_type === 'vacation' && (
+                <div className="form-group">
+                  <label>Days Requested</label>
+                  <input
+                    type="number"
+                    value={formData.start_date && formData.end_date 
+                      ? Math.round((new Date(formData.end_date) - new Date(formData.start_date)) / (1000 * 60 * 60 * 24)) + 1
+                      : ''}
+                    disabled
+                    style={{ backgroundColor: '#f5f5f5' }}
+                  />
+                  <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                    Based on start and end dates (8 hours per day)
+                  </p>
+                </div>
+              )}
+
+              <div className="form-group">
+                <label>Reason</label>
+                <textarea
+                  name="reason"
+                  value={formData.reason}
+                  onChange={(e) => setFormData({...formData, reason: e.target.value})}
+                  rows="3"
+                  placeholder="Optional reason for time off request..."
+                />
+              </div>
+
+              <div className="flex" style={{ justifyContent: 'flex-end', gap: '10px' }}>
+                <button 
+                  type="button" 
+                  className="btn" 
+                  onClick={() => {
+                    setShowRequestModal(false)
+                    setFormData({
+                      employee_id: '',
+                      start_date: '',
+                      end_date: '',
+                      leave_type: 'vacation',
+                      reason: '',
+                      hours_requested: ''
+                    })
+                  }}
+                  style={{ backgroundColor: '#6c757d', color: 'white' }}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Submit Request
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
               <div className="form-group">
                 <label>Leave Type</label>
