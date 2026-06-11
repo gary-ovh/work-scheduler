@@ -6,10 +6,10 @@ function Dashboard({ onLogout }) {
 
   const navItems = [
     { path: '/dashboard', label: 'Dashboard' },
-    { path: '/shifts', label: 'Shifts' },
-    { path: '/templates', label: 'Templates' },
-    { path: '/employees', label: 'Employees' },
-    { path: '/time-off', label: 'Time Off' }
+    { path: '/dashboard/shifts', label: 'Shifts' },
+    { path: '/dashboard/templates', label: 'Templates' },
+    { path: '/dashboard/employees', label: 'Employees' },
+    { path: '/dashboard/time-off', label: 'Time Off' }
   ]
 
   // Show back button on all pages except dashboard
