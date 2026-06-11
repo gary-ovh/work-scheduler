@@ -11,6 +11,8 @@ function Shifts() {
   const [viewMode, setViewMode] = useState('month') // 'month', 'week', 'day'
   const [weekStart, setWeekStart] = useState(startOfWeek(new Date()))
   const [show5DayWeek, setShow5DayWeek] = useState(false)
+  const [showVacation, setShowVacation] = useState(false)
+  const [vacationRequests, setVacationRequests] = useState([])
   const [formData, setFormData] = useState({
     employee_id: '',
     start_time: '',
@@ -31,9 +33,19 @@ function Shifts() {
       const payload = JSON.parse(atob(token.split('.')[1]))
       setUser({ id: payload.id, role: payload.role })
       
-      await Promise.all([fetchShifts(), fetchEmployees()])
+      await Promise.all([fetchShifts(), fetchEmployees(), fetchVacationRequests()])
     } catch (error) {
       console.error('Failed to fetch user data:', error)
+    }
+  }
+
+  const fetchVacationRequests = async () => {
+    try {
+      const response = await api.get('/leave/requests?status=approved')
+      const vacations = response.data.filter(r => r.leave_type.toLowerCase() === 'vacation')
+      setVacationRequests(vacations)
+    } catch (error) {
+      console.error('Failed to fetch vacation requests:', error)
     }
   }
 
@@ -147,6 +159,20 @@ function Shifts() {
     return employee ? `${employee.first_name} ${employee.last_name}` : 'Unknown'
   }
 
+  const isEmployeeOnVacation = (employeeId, date) => {
+    if (!showVacation) return false
+    
+    const dateStr = format(date, 'yyyy-MM-dd')
+    const vacation = vacationRequests.find(v => 
+      v.employee_id === employeeId &&
+      v.status === 'approved' &&
+      v.leave_type.toLowerCase() === 'vacation' &&
+      dateStr >= v.start_date &&
+      dateStr <= v.end_date
+    )
+    return !!vacation
+  }
+
   const navigateWeek = (direction) => {
     if (viewMode === 'month') {
       setWeekStart(direction === 'next' ? addWeeks(weekStart, 4) : subWeeks(weekStart, 4))
@@ -216,6 +242,22 @@ function Shifts() {
               Mon-Fri
             </label>
           )}
+
+          {/* Show Vacation Toggle */}
+          <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '14px' }}>
+            <input
+              type="checkbox"
+              checked={showVacation}
+              onChange={(e) => {
+                setShowVacation(e.target.checked)
+                if (e.target.checked && vacationRequests.length === 0) {
+                  fetchVacationRequests()
+                }
+              }}
+              style={{ width: 'auto' }}
+            />
+            Show Vacation
+          </label>
 
           {/* Navigation */}
           <div className="flex" style={{ alignItems: 'center', gap: '5px' }}>
@@ -346,6 +388,31 @@ function Shifts() {
                             )}
                           </div>
                         ))}
+                        
+                        {/* Show vacation indicator in month view */}
+                        {showVacation && (() => {
+                          const vacationEmployees = employees.filter(e => isEmployeeOnVacation(e.id, day))
+                          const remainingSlots = 3 - dayShifts.slice(0, 3).length
+                          
+                          return vacationEmployees.slice(0, remainingSlots).map(employee => (
+                            <div 
+                              key={`vac-${employee.id}-${day.toISOString()}`}
+                              style={{
+                                backgroundColor: '#fff3cd',
+                                borderLeft: `3px solid #ffc107`,
+                                padding: '4px 6px',
+                                borderRadius: '3px',
+                                fontSize: '10px',
+                                fontStyle: 'italic'
+                              }}
+                            >
+                              <div style={{ fontWeight: '600', color: '#856404' }}>
+                                🌴 {employee.first_name} {employee.last_name}
+                              </div>
+                            </div>
+                          ))
+                        })()}
+                        
                         {dayShifts.length > 3 && (
                           <div style={{ fontSize: '10px', color: '#666', textAlign: 'center' }}>
                             +{dayShifts.length - 3} more
@@ -427,6 +494,33 @@ function Shifts() {
                         )}
                       </div>
                     ))}
+                    
+                    {/* Show employees on vacation */}
+                    {showVacation && employees.map(employee => {
+                      if (isEmployeeOnVacation(employee.id, day)) {
+                        return (
+                          <div 
+                            key={`vac-${employee.id}`}
+                            style={{
+                              backgroundColor: '#fff3cd',
+                              borderLeft: `3px solid #ffc107`,
+                              padding: '8px',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              fontStyle: 'italic'
+                            }}
+                          >
+                            <div style={{ fontWeight: '600', color: '#856404' }}>
+                              🌴 {employee.first_name} {employee.last_name}
+                            </div>
+                            <div style={{ color: '#856404', fontSize: '11px' }}>
+                              On Vacation
+                            </div>
+                          </div>
+                        )
+                      }
+                      return null
+                    })}
                   </div>
                 </div>
               )
