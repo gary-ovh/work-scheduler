@@ -3,6 +3,7 @@ import api from '../api'
 
 function Employees({ onLogout }) {
   const [employees, setEmployees] = useState([])
+  const [user, setUser] = useState(null)
   const [showModal, setShowModal] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState(null)
   const [formData, setFormData] = useState({
@@ -13,9 +14,22 @@ function Employees({ onLogout }) {
     hourly_rate: ''
   })
 
+  const canEdit = user?.role === 'manager' || user?.role === 'admin'
+
   useEffect(() => {
-    fetchEmployees()
+    fetchUserData()
   }, [])
+
+  const fetchUserData = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      setUser({ id: payload.id, role: payload.role })
+      await fetchEmployees()
+    } catch (error) {
+      console.error('Failed to fetch user data:', error)
+    }
+  }
 
   const fetchEmployees = async () => {
     try {
@@ -85,9 +99,13 @@ function Employees({ onLogout }) {
     <div>
       <div className="flex justify-between mb-2">
         <h2>Employee Management</h2>
-        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-          Add Employee
-        </button>
+        <div className="flex">
+          {canEdit && (
+            <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+              Add Employee
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="card">
@@ -109,19 +127,24 @@ function Employees({ onLogout }) {
                 <td>{employee.phone || '-'}</td>
                 <td>${employee.hourly_rate || '0.00'}</td>
                 <td>
-                  <button 
-                    className="btn btn-primary" 
-                    onClick={() => handleEdit(employee)}
-                    style={{ marginRight: '5px' }}
-                  >
-                    Edit
-                  </button>
-                  <button 
-                    className="btn btn-danger" 
-                    onClick={() => handleDelete(employee.id)}
-                  >
-                    Delete
-                  </button>
+                  {canEdit && (
+                    <>
+                      <button 
+                        className="btn btn-primary" 
+                        onClick={() => handleEdit(employee)}
+                        style={{ marginRight: '5px' }}
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        className="btn btn-danger" 
+                        onClick={() => handleDelete(employee.id)}
+                      >
+                        Delete
+                      </button>
+                    </>
+                  )}
+                  {!canEdit && <span style={{ color: '#666' }}>View only</span>}
                 </td>
               </tr>
             ))}
