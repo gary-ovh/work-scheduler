@@ -150,13 +150,24 @@ function Shifts({ onLogout }) {
   const navigateWeek = (direction) => {
     if (viewMode === 'month') {
       setWeekStart(direction === 'next' ? addWeeks(weekStart, 4) : subWeeks(weekStart, 4))
+    } else if (viewMode === 'week' && show5DayWeek) {
+      // For Mon-Fri view, navigate by 5 days
+      const newDate = direction === 'next' ? new Date(weekStart) : new Date(weekStart)
+      newDate.setDate(newDate.getDate() + (direction === 'next' ? 5 : -5))
+      setWeekStart(newDate)
     } else {
       setWeekStart(direction === 'next' ? addWeeks(weekStart, 1) : subWeeks(weekStart, 1))
     }
   }
 
   const goToToday = () => {
-    setWeekStart(startOfWeek(new Date()))
+    if (viewMode === 'month') {
+      setWeekStart(startOfMonth(new Date()))
+    } else if (viewMode === 'week') {
+      setWeekStart(startOfWeek(new Date()))
+    } else {
+      setWeekStart(new Date())
+    }
   }
 
   const daysToShow = getDaysToShow()
@@ -212,8 +223,10 @@ function Shifts({ onLogout }) {
             <span style={{ fontWeight: '600', minWidth: '200px', textAlign: 'center' }}>
               {viewMode === 'month' 
                 ? format(weekStart, 'MMMM yyyy')
+                : viewMode === 'week' && show5DayWeek
+                ? `${format(startOfWeek(weekStart, { weekStartsOn: 1 }), 'MMM dd')} - ${format(new Date(weekStart.getTime() + 4 * 24 * 60 * 60 * 1000), 'MMM dd, yyyy')}`
                 : viewMode === 'week'
-                ? `${format(show5DayWeek ? weekStart : startOfWeek(weekStart), 'MMM dd')} - ${format(show5DayWeek ? addWeeks(weekStart, 1) : endOfWeek(weekStart), 'MMM dd, yyyy')}`
+                ? `${format(startOfWeek(weekStart), 'MMM dd')} - ${format(endOfWeek(weekStart), 'MMM dd, yyyy')}`
                 : format(weekStart, 'MMMM dd, yyyy')
               }
             </span>
