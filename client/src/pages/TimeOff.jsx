@@ -79,12 +79,6 @@ function TimeOff() {
     }
   }
 
-  const handleRefreshBalance = () => {
-    if (selectedEmployee) {
-      fetchLeaveBalance(selectedEmployee.id)
-    }
-  }
-
   const handleSubmitRequest = async (e) => {
     e.preventDefault()
     
