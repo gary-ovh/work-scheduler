@@ -326,12 +326,12 @@ function TimeOff() {
               <tr key={request.id}>
                 <td>{request.first_name} {request.last_name}</td>
                 <td style={{ textTransform: 'capitalize' }}>{request.leave_type}</td>
-                <td>{format(new Date(request.start_date + 'T00:00:00'), 'MMM dd, yyyy')}</td>
-                <td>{format(new Date(request.end_date + 'T00:00:00'), 'MMM dd, yyyy')}</td>
+                <td>{request.start_date ? format(new Date(request.start_date + 'T00:00:00'), 'MMM dd, yyyy') : '-'}</td>
+                <td>{request.end_date ? format(new Date(request.end_date + 'T00:00:00'), 'MMM dd, yyyy') : '-'}</td>
                 <td>
-                  {request.leave_type.toLowerCase() === 'vacation'
-                    ? `${request.days_requested / 8} days`
-                    : `${request.days_requested} hrs`}
+                  {request.leave_type && request.leave_type.toLowerCase() === 'vacation'
+                    ? `${(request.days_requested || 0) / 8} days`
+                    : `${request.days_requested || 0} hrs`}
                 </td>
                 <td style={{ maxWidth: '200px', fontSize: '13px' }}>
                   {request.reason || '-'}
