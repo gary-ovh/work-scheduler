@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS employees (
   last_name VARCHAR(100) NOT NULL,
   phone VARCHAR(20),
   position VARCHAR(100),
-  hourly_rate DECIMAL(10, 2),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

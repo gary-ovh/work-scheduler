@@ -11,7 +11,9 @@ function Employees() {
     last_name: '',
     phone: '',
     position: '',
-    hourly_rate: ''
+    email: '',
+    password: '',
+    role: 'employee'
   })
 
   const canEdit = user?.role === 'manager' || user?.role === 'admin'
@@ -72,7 +74,9 @@ function Employees() {
       last_name: employee.last_name,
       phone: employee.phone || '',
       position: employee.position || '',
-      hourly_rate: employee.hourly_rate || ''
+      email: employee.email || '',
+      password: '',
+      role: employee.role || 'employee'
     })
     setShowModal(true)
   }
@@ -84,6 +88,18 @@ function Employees() {
         fetchEmployees()
       } catch (error) {
         console.error('Failed to delete employee:', error)
+      }
+    }
+  }
+
+  const handleChangeRole = async (employee, newRole) => {
+    if (confirm(`Change ${employee.first_name}'s role to ${newRole}?`)) {
+      try {
+        await api.put(`/employees/${employee.id}/role`, { role: newRole })
+        fetchEmployees()
+      } catch (error) {
+        console.error('Failed to update role:', error)
+        alert('Failed to update role')
       }
     }
   }
@@ -113,9 +129,10 @@ function Employees() {
           <thead>
             <tr>
               <th>Name</th>
+              <th>Email</th>
               <th>Position</th>
               <th>Phone</th>
-              <th>Hourly Rate</th>
+              <th>Role</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -123,22 +140,57 @@ function Employees() {
             {employees.map((employee) => (
               <tr key={employee.id}>
                 <td>{employee.first_name} {employee.last_name}</td>
+                <td>{employee.email || '-'}</td>
                 <td>{employee.position || '-'}</td>
                 <td>{employee.phone || '-'}</td>
-                <td>${employee.hourly_rate || '0.00'}</td>
+                <td>
+                  <span style={{
+                    padding: '3px 8px',
+                    borderRadius: '4px',
+                    backgroundColor: employee.role === 'admin' ? '#dc3545' : employee.role === 'manager' ? '#007bff' : '#28a745',
+                    color: 'white',
+                    fontSize: '11px',
+                    textTransform: 'capitalize'
+                  }}>
+                    {employee.role}
+                  </span>
+                </td>
                 <td>
                   {canEdit && (
                     <>
                       <button 
                         className="btn btn-primary" 
                         onClick={() => handleEdit(employee)}
-                        style={{ marginRight: '5px' }}
+                        style={{ marginRight: '5px', fontSize: '12px', padding: '4px 8px' }}
                       >
                         Edit
                       </button>
+                      {user?.role === 'admin' && (
+                        <>
+                          {employee.role === 'employee' && (
+                            <button 
+                              className="btn" 
+                              onClick={() => handleChangeRole(employee, 'manager')}
+                              style={{ marginRight: '5px', fontSize: '12px', padding: '4px 8px', backgroundColor: '#007bff', color: 'white' }}
+                            >
+                              Promote
+                            </button>
+                          )}
+                          {employee.role === 'manager' && (
+                            <button 
+                              className="btn" 
+                              onClick={() => handleChangeRole(employee, 'employee')}
+                              style={{ marginRight: '5px', fontSize: '12px', padding: '4px 8px', backgroundColor: '#6c757d', color: 'white' }}
+                            >
+                              Demote
+                            </button>
+                          )}
+                        </>
+                      )}
                       <button 
                         className="btn btn-danger" 
                         onClick={() => handleDelete(employee.id)}
+                        style={{ fontSize: '12px', padding: '4px 8px' }}
                       >
                         Delete
                       </button>
@@ -196,6 +248,60 @@ function Employees() {
                 />
               </div>
 
+              {!editingEmployee && (
+                <>
+                  <div className="form-group">
+                    <label>Email (for login)</label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      placeholder="employee@example.com"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Password (leave blank to skip account creation)</label>
+                    <input
+                      type="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="Enter password to create login account"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Role</label>
+                    <select
+                      name="role"
+                      value={formData.role}
+                      onChange={handleChange}
+                    >
+                      <option value="employee">Employee</option>
+                      <option value="manager">Manager</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                </>
+              )}
+
+              {editingEmployee && (
+                <>
+                  <div className="form-group">
+                    <label>Email</label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      disabled
+                      style={{ backgroundColor: '#f5f5f5' }}
+                    />
+                  </div>
+                </>
+              )}
+
               <div className="form-group">
                 <label>Phone</label>
                 <input
@@ -215,19 +321,6 @@ function Employees() {
                   value={formData.position}
                   onChange={handleChange}
                   placeholder="e.g., Cashier, Supervisor"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Hourly Rate ($)</label>
-                <input
-                  type="number"
-                  name="hourly_rate"
-                  value={formData.hourly_rate}
-                  onChange={handleChange}
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
                 />
               </div>
 
