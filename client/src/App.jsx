@@ -54,8 +54,7 @@ function App() {
           <Route path="templates" element={<Templates />} />
           <Route path="employees" element={<Employees />} />
           <Route path="time-off" element={<TimeOff />} />
-          <Route path="teams" element={<Teams />} />
-          <Route path="settings" element={<Settings />} />
+          <Route path="settings" element={<Settings onLogout={handleLogout} />} />
         </Route>
         <Route path="/" element={<Navigate to="/dashboard" />} />
       </Routes>

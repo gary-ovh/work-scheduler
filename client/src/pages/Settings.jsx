@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import api from '../api'
+import Teams from './Teams'
 
 function Settings({ onLogout }) {
   const [passwordData, setPasswordData] = useState({
@@ -8,6 +9,21 @@ function Settings({ onLogout }) {
     confirmPassword: ''
   })
   const [message, setMessage] = useState({ type: '', text: '' })
+  const [user, setUser] = useState(null)
+
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        setUser({ id: payload.id, role: payload.role })
+      } catch (error) {
+        console.error('Failed to decode token:', error)
+      }
+    }
+  }, [])
+
+  const canManageTeams = user?.role === 'manager' || user?.role === 'admin'
 
   const handleChangePassword = async (e) => {
     e.preventDefault()
@@ -105,6 +121,12 @@ function Settings({ onLogout }) {
           </button>
         </form>
       </div>
+
+      {canManageTeams && (
+        <div style={{ marginTop: '30px' }}>
+          <Teams />
+        </div>
+      )}
     </div>
   )
 }

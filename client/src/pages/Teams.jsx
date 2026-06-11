@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../api'
 
-function Teams() {
+function Teams({ embedded = false }) {
   const [teams, setTeams] = useState([])
   const [showModal, setShowModal] = useState(false)
   const [editingTeam, setEditingTeam] = useState(null)
@@ -79,12 +79,23 @@ function Teams() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h2>Teams Management</h2>
-        <button className="btn btn-primary" onClick={() => openModal()}>
-          + Add Team
-        </button>
-      </div>
+      {!embedded && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h2>Teams Management</h2>
+          <button className="btn btn-primary" onClick={() => openModal()}>
+            + Add Team
+          </button>
+        </div>
+      )}
+
+      {embedded && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h3>Manage Teams</h3>
+          <button className="btn btn-primary" onClick={() => openModal()}>
+            + Add Team
+          </button>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
         {teams.map(team => (
