@@ -77,10 +77,13 @@ function Templates() {
     try {
       if (applyData.applyToWeekdays) {
         // Apply to Monday-Friday of the selected week
-        const weekStart = new Date(applyData.date)
-        const dayOfWeek = weekStart.getDay()
-        const diff = weekStart.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1) // Adjust to Monday
-        const monday = new Date(weekStart.setDate(diff))
+        const selectedDate = new Date(applyData.date)
+        const dayOfWeek = selectedDate.getDay()
+        
+        // Calculate days back to Monday (0=Sun→6, 1=Mon→0, 2=Tue→1, etc.)
+        const daysBack = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+        const monday = new Date(selectedDate)
+        monday.setDate(selectedDate.getDate() - daysBack)
         
         const promises = []
         for (let i = 0; i < 5; i++) {
