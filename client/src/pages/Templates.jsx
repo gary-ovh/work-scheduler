@@ -77,7 +77,9 @@ function Templates() {
     try {
       if (applyData.applyToWeekdays) {
         // Apply to Monday-Friday of the selected week
-        const selectedDate = new Date(applyData.date)
+        // Parse date string manually to avoid timezone issues
+        const [year, month, day] = applyData.date.split('-').map(Number)
+        const selectedDate = new Date(year, month - 1, day, 12, 0, 0) // Noon to avoid DST issues
         const dayOfWeek = selectedDate.getDay()
         
         // Calculate days back to Monday (0=Sun→6, 1=Mon→0, 2=Tue→1, etc.)
@@ -89,7 +91,8 @@ function Templates() {
         for (let i = 0; i < 5; i++) {
           const shiftDate = new Date(monday)
           shiftDate.setDate(monday.getDate() + i)
-          const dateStr = shiftDate.toISOString().split('T')[0]
+          // Format as YYYY-MM-DD to avoid timezone conversion
+          const dateStr = shiftDate.toLocaleDateString('en-CA', { timeZone: 'UTC' })
           
           promises.push(
             api.post('/templates/apply', {
@@ -427,11 +430,13 @@ function Templates() {
               {applyData.applyToWeekdays && applyData.date && (
                 <div className="card" style={{ backgroundColor: '#f8f9fa', marginBottom: '15px' }}>
                   <p style={{ fontWeight: '600', marginBottom: '10px' }}>
-                    This will create shifts Monday-Friday for the week of {format(new Date(applyData.date), 'MMM dd, yyyy')}:
+                    This will create shifts Monday-Friday for the week of {applyData.date}:
                   </p>
                   <ul style={{ paddingLeft: '20px', color: '#666', fontSize: '14px' }}>
                     {(() => {
-                      const selectedDate = new Date(applyData.date)
+                      // Parse date string manually to avoid timezone issues
+                      const [year, month, day] = applyData.date.split('-').map(Number)
+                      const selectedDate = new Date(year, month - 1, day, 12, 0, 0)
                       const dayOfWeek = selectedDate.getDay()
                       const daysBack = dayOfWeek === 0 ? 6 : dayOfWeek - 1
                       const monday = new Date(selectedDate)
