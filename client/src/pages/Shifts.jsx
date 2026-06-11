@@ -236,6 +236,11 @@ function Shifts() {
     } else if (viewMode === 'week') {
       // Always navigate by full weeks (7 days), even in Mon-Fri mode
       setWeekStart(direction === 'next' ? addWeeks(weekStart, 1) : subWeeks(weekStart, 1))
+    } else if (viewMode === 'day') {
+      // Navigate by single days in day view
+      const newDate = new Date(weekStart)
+      newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1))
+      setWeekStart(newDate)
     } else {
       setWeekStart(direction === 'next' ? addWeeks(weekStart, 1) : subWeeks(weekStart, 1))
     }
@@ -472,6 +477,7 @@ function Shifts() {
                               borderRadius: '3px',
                               fontSize: '11px'
                             }}
+                            title={shift.notes ? `Notes: ${shift.notes}` : ''}
                           >
                             <div style={{ fontWeight: '600' }}>{getEmployeeName(shift.employee_id)}</div>
                             <div style={{ color: '#666' }}>
@@ -589,6 +595,11 @@ function Shifts() {
                         )}
                         {getTeamName(shift.employee_id) && (
                           <div style={{ color: '#888', fontSize: '9px', marginTop: '2px' }}>{getTeamName(shift.employee_id)}</div>
+                        )}
+                        {shift.notes && (
+                          <div style={{ color: '#666', fontSize: '10px', marginTop: '4px', fontStyle: 'italic', borderTop: '1px solid #ddd', paddingTop: '4px' }}>
+                            📝 {shift.notes}
+                          </div>
                         )}
                         {isManager && (
                           <div style={{ marginTop: '5px', display: 'flex', gap: '5px' }}>

@@ -8,7 +8,6 @@ import Employees from './pages/Employees'
 import TimeOff from './pages/TimeOff'
 import Templates from './pages/Templates'
 import Teams from './pages/Teams'
-import Calendar from './pages/Calendar'
 import Settings from './pages/Settings'
 
 function App() {
@@ -56,7 +55,6 @@ function App() {
           <Route path="employees" element={<Employees />} />
           <Route path="time-off" element={<TimeOff />} />
           <Route path="teams" element={<Teams />} />
-          <Route path="calendar" element={<Calendar />} />
           <Route path="settings" element={<Settings />} />
         </Route>
         <Route path="/" element={<Navigate to="/dashboard" />} />
