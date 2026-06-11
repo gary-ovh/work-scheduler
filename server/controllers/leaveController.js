@@ -122,30 +122,48 @@ const createTimeOffRequest = async (req, res) => {
 const getAllTimeOffRequests = async (req, res) => {
   try {
     const { status, employee_id } = req.query;
+    const user = req.user;
 
     let query = `
       SELECT t.*, e.first_name, e.last_name 
       FROM time_off_requests t
       JOIN employees e ON t.employee_id = e.id
-      ORDER BY t.created_at DESC
     `;
 
     const values = [];
     const conditions = [];
+
+    // If not admin/manager, only show their own requests
+    if (user.role !== 'admin' && user.role !== 'manager') {
+      // Find the employee_id for this user
+      const empResult = await pool.query(
+        'SELECT id FROM employees WHERE user_id = $1',
+        [user.id]
+      );
+      
+      if (empResult.rows.length > 0) {
+        conditions.push(`t.employee_id = $${values.length + 1}`);
+        values.push(empResult.rows[0].id);
+      } else {
+        // No employee record found, return empty
+        return res.json([]);
+      }
+    } else if (employee_id) {
+      // If admin/manager and employee_id is specified, filter by it
+      conditions.push(`t.employee_id = $${values.length + 1}`);
+      values.push(employee_id);
+    }
 
     if (status) {
       conditions.push(`t.status = $${values.length + 1}`);
       values.push(status);
     }
 
-    if (employee_id) {
-      conditions.push(`t.employee_id = $${values.length + 1}`);
-      values.push(employee_id);
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
     }
 
-    if (conditions.length > 0) {
-      query = query.replace('ORDER BY', ' WHERE ' + conditions.join(' AND ') + ' ORDER BY');
-    }
+    query += ' ORDER BY t.created_at DESC';
 
     const result = await pool.query(query, values);
     res.json(result.rows);

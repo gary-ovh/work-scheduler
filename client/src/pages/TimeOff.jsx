@@ -33,25 +33,29 @@ function TimeOff() {
       const payload = JSON.parse(atob(token.split('.')[1]))
       setUser({ id: payload.id, role: payload.role })
 
+      // Fetch employees list (needed for all users)
+      const employeesRes = await api.get('/employees')
+      setEmployees(employeesRes.data)
+      
       if (payload.role === 'manager' || payload.role === 'admin') {
-        const [employeesRes, requestsRes] = await Promise.all([
-          api.get('/employees'),
-          api.get('/leave/requests')
-        ])
-        setEmployees(employeesRes.data)
+        // Managers/Admins can see all requests
+        const requestsRes = await api.get('/leave/requests')
         setRequests(requestsRes.data)
       } else {
-        const [employeesRes, requestsRes] = await Promise.all([
-          api.get('/employees'),
-          api.get(`/leave/requests?employee_id=${payload.id}`)
-        ])
-        setEmployees(employeesRes.data)
-        setRequests(requestsRes.data)
-        
+        // Employees can only see their own requests
         const employee = employeesRes.data.find(e => e.user_id === payload.id)
         if (employee) {
           setSelectedEmployee(employee)
           fetchLeaveBalance(employee.id)
+          
+          // Fetch only this employee's requests
+          try {
+            const requestsRes = await api.get(`/leave/requests?employee_id=${employee.id}`)
+            setRequests(requestsRes.data)
+          } catch (error) {
+            console.error('Failed to fetch requests:', error)
+            setRequests([])
+          }
         }
       }
     } catch (error) {
