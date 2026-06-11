@@ -5,8 +5,11 @@ const { authenticateToken, authorizeRole } = require('../middleware/auth');
 
 router.use(authenticateToken);
 
+// All authenticated users can view templates
 router.get('/', templateController.getAllTemplates);
 router.get('/:id', templateController.getTemplateById);
+
+// Only managers and admins can create, update, delete, apply
 router.post('/', authorizeRole('manager', 'admin'), templateController.createTemplate);
 router.put('/:id', authorizeRole('manager', 'admin'), templateController.updateTemplate);
 router.delete('/:id', authorizeRole('manager', 'admin'), templateController.deleteTemplate);
