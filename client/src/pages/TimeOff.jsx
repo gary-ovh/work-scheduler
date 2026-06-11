@@ -174,11 +174,11 @@ function TimeOff() {
     if (!selectedEmployee) return
 
     try {
-      // Convert days to hours for sick and flexible (multiply by 8)
+      // Vacation is stored in days, sick and flexible are stored in hours (no conversion needed)
       await api.put(`/leave/balance/${selectedEmployee.id}`, {
         vacation_days: balanceFormData.vacation_days,
-        sick_days: parseFloat(balanceFormData.sick_hours) * 8,
-        flexible_days: parseFloat(balanceFormData.flexible_hours) * 8
+        sick_days: parseFloat(balanceFormData.sick_hours) || 0,
+        flexible_days: parseFloat(balanceFormData.flexible_hours) || 0
       })
       setShowBalanceModal(false)
       fetchLeaveBalance(selectedEmployee.id)
@@ -280,7 +280,7 @@ function TimeOff() {
                 {leaveBalance.vacation_days}
               </p>
               <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
-                {(leaveBalance.vacation_days * 8).toFixed(0)} hours
+                {(parseFloat(leaveBalance.vacation_days) * 8).toFixed(0)} hours
               </p>
             </div>
             <div style={{ 
@@ -294,7 +294,7 @@ function TimeOff() {
                 {leaveBalance.sick_days}
               </p>
               <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
-                {(leaveBalance.sick_days / 8).toFixed(1)} days
+                {(parseFloat(leaveBalance.sick_days) / 8).toFixed(1)} days
               </p>
             </div>
             <div style={{ 
@@ -308,7 +308,7 @@ function TimeOff() {
                 {leaveBalance.flexible_days}
               </p>
               <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
-                {(leaveBalance.flexible_days / 8).toFixed(1)} days
+                {(parseFloat(leaveBalance.flexible_days) / 8).toFixed(1)} days
               </p>
             </div>
           </div>
