@@ -226,13 +226,16 @@ function Employees() {
                           Reset Password
                         </button>
                       )}
-                      <button 
-                        className="btn btn-danger" 
-                        onClick={() => handleDelete(employee.id)}
-                        style={{ fontSize: '12px', padding: '4px 8px' }}
-                      >
-                        Delete
-                      </button>
+                      {/* Only admins can delete, and never delete other admins */}
+                      {user?.role === 'admin' && employee.role !== 'admin' && (
+                        <button 
+                          className="btn btn-danger" 
+                          onClick={() => handleDelete(employee.id)}
+                          style={{ fontSize: '12px', padding: '4px 8px' }}
+                        >
+                          Delete
+                        </button>
+                      )}
                     </>
                   )}
                   {!canEdit && <span style={{ color: '#666' }}>View only</span>}

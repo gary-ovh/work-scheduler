@@ -114,11 +114,26 @@ const updateEmployeeRole = async (req, res) => {
 const deleteEmployee = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query('DELETE FROM employees WHERE id = $1 RETURNING *', [id]);
+    const user = req.user;
 
-    if (result.rows.length === 0) {
+    // Get employee details including user role
+    const empResult = await pool.query(
+      'SELECT e.*, u.role FROM employees e JOIN users u ON e.user_id = u.id WHERE e.id = $1',
+      [id]
+    );
+
+    if (empResult.rows.length === 0) {
       return res.status(404).json({ error: 'Employee not found' });
     }
+
+    const employee = empResult.rows[0];
+
+    // Prevent deleting admin users
+    if (employee.role === 'admin') {
+      return res.status(403).json({ error: 'Cannot delete admin users' });
+    }
+
+    const result = await pool.query('DELETE FROM employees WHERE id = $1 RETURNING *', [id]);
 
     res.json({ message: 'Employee deleted successfully' });
   } catch (error) {
