@@ -415,8 +415,218 @@ function Shifts({ onLogout }) {
                 {format(weekStart, 'EEEE, MMMM d, yyyy')}
               </h3>
             </div>
-            
+
+            {/* Timeline View */}
             <div className="card">
+              <h4 style={{ marginBottom: '15px' }}>Daily Timeline</h4>
+              
+              {/* Time Header */}
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: '150px repeat(24, 1fr)', 
+                gap: '1px',
+                backgroundColor: '#e0e0e0',
+                marginBottom: '10px',
+                borderRadius: '4px',
+                overflow: 'hidden'
+              }}>
+                <div style={{ 
+                  backgroundColor: '#f8f9fa', 
+                  padding: '10px', 
+                  fontWeight: '600',
+                  fontSize: '12px',
+                  textAlign: 'center'
+                }}>
+                  Employee
+                </div>
+                {Array.from({ length: 24 }).map((_, hour) => (
+                  <div key={hour} style={{ 
+                    backgroundColor: '#f8f9fa', 
+                    padding: '5px', 
+                    fontSize: '10px',
+                    textAlign: 'center',
+                    borderLeft: hour % 6 === 0 ? '1px solid #ccc' : '1px solid #e0e0e0'
+                  }}>
+                    {hour % 6 === 0 ? `${hour}:00` : ''}
+                  </div>
+                ))}
+              </div>
+
+              {/* Employee Rows */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {employees.map((employee) => {
+                  const employeeShifts = getShiftsForDay(weekStart).filter(
+                    s => s.employee_id === employee.id
+                  )
+                  
+                  return (
+                    <div 
+                      key={employee.id}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '150px 1fr',
+                        gap: '1px',
+                        backgroundColor: '#e0e0e0',
+                        borderRadius: '4px',
+                        overflow: 'hidden',
+                        minHeight: '50px'
+                      }}
+                    >
+                      {/* Employee Name */}
+                      <div style={{
+                        backgroundColor: '#f8f9fa',
+                        padding: '12px 8px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        fontSize: '13px'
+                      }}>
+                        <div style={{ fontWeight: '600' }}>
+                          {employee.first_name} {employee.last_name}
+                        </div>
+                        {employee.position && (
+                          <div style={{ fontSize: '11px', color: '#666' }}>{employee.position}</div>
+                        )}
+                      </div>
+
+                      {/* Timeline Track */}
+                      <div style={{
+                        backgroundColor: 'white',
+                        position: 'relative',
+                        minHeight: '50px'
+                      }}>
+                        {/* Hour grid lines */}
+                        <div style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(24, 1fr)',
+                          pointerEvents: 'none'
+                        }}>
+                          {Array.from({ length: 24 }).map((_, i) => (
+                            <div 
+                              key={i} 
+                              style={{ 
+                                borderLeft: i % 6 === 0 ? '1px solid #f0f0f0' : '1px solid #fafafa',
+                                height: '100%'
+                              }} 
+                            />
+                          ))}
+                        </div>
+
+                        {/* Shift bars */}
+                        {employeeShifts.map((shift, idx) => {
+                          const startTime = new Date(shift.start_time)
+                          const endTime = new Date(shift.end_time)
+                          
+                          const startHour = startTime.getHours() + startTime.getMinutes() / 60
+                          const endHour = endTime.getHours() + endTime.getMinutes() / 60
+                          const duration = endHour - startHour
+                          
+                          const leftPercent = (startHour / 24) * 100
+                          const widthPercent = (duration / 24) * 100
+                          
+                          return (
+                            <div
+                              key={shift.id}
+                              style={{
+                                position: 'absolute',
+                                left: `${leftPercent}%`,
+                                width: `${widthPercent}%`,
+                                top: `${idx * 22 + 5}px`,
+                                height: '18px',
+                                backgroundColor: '#4CAF50',
+                                borderRadius: '3px',
+                                cursor: isManager ? 'pointer' : 'default',
+                                display: 'flex',
+                                alignItems: 'center',
+                                padding: '0 4px',
+                                fontSize: '10px',
+                                color: 'white',
+                                fontWeight: '500',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                                zIndex: 10,
+                                overflow: 'hidden',
+                                whiteSpace: 'nowrap'
+                              }}
+                              onClick={() => isManager && handleEdit(shift)}
+                              title={`${employee.first_name} ${employee.last_name}\n${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}\n${shift.position || ''}`}
+                            >
+                              {duration >= 1 && (
+                                <span>
+                                  {format(startTime, 'h:mm a')} - {format(endTime, 'h:mm a')}
+                                  {shift.position && ` • ${shift.position}`}
+                                </span>
+                              )}
+                            </div>
+                          )
+                        })}
+
+                        {employeeShifts.length === 0 && (
+                          <div style={{
+                            position: 'absolute',
+                            left: '10px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            fontSize: '11px',
+                            color: '#ccc'
+                          }}>
+                            No shift
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Legend */}
+              <div style={{ 
+                marginTop: '20px', 
+                padding: '10px', 
+                backgroundColor: '#f8f9fa', 
+                borderRadius: '4px',
+                fontSize: '12px'
+              }}>
+                <strong>Legend:</strong>
+                <span style={{ 
+                  display: 'inline-block', 
+                  width: '20px', 
+                  height: '12px', 
+                  backgroundColor: '#4CAF50', 
+                  borderRadius: '2px',
+                  marginLeft: '10px',
+                  marginRight: '5px'
+                }}></span>
+                Scheduled Shift (click to edit)
+                <span style={{ marginLeft: '20px', color: '#666' }}>
+                  Grid lines show 6-hour intervals
+                </span>
+              </div>
+            </div>
+
+            {/* Table View Toggle */}
+            <div style={{ marginTop: '20px' }}>
+              <button 
+                className="btn" 
+                onClick={() => {
+                  const tableView = document.getElementById('day-table-view')
+                  if (tableView) {
+                    tableView.style.display = tableView.style.display === 'none' ? 'block' : 'none'
+                  }
+                }}
+                style={{ marginBottom: '10px' }}
+              >
+                Toggle Table View
+              </button>
+            </div>
+
+            {/* Traditional Table View (toggleable) */}
+            <div id="day-table-view" className="card" style={{ display: 'none' }}>
+              <h4 style={{ marginBottom: '15px' }}>Shift Details</h4>
               <table className="table">
                 <thead>
                   <tr>
