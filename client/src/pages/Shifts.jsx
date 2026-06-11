@@ -173,6 +173,18 @@ function Shifts() {
     return !!vacation
   }
 
+  const getVacationDates = (employeeId) => {
+    const vacations = vacationRequests.filter(v => 
+      v.employee_id === employeeId &&
+      v.status === 'approved' &&
+      v.leave_type.toLowerCase() === 'vacation'
+    )
+    return vacations.map(v => ({
+      start: format(new Date(v.start_date + 'T00:00:00'), 'MMM dd'),
+      end: format(new Date(v.end_date + 'T00:00:00'), 'MMM dd')
+    }))
+  }
+
   const navigateWeek = (direction) => {
     if (viewMode === 'month') {
       setWeekStart(direction === 'next' ? addWeeks(weekStart, 4) : subWeeks(weekStart, 4))

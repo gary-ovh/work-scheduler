@@ -326,8 +326,8 @@ function TimeOff() {
               <tr key={request.id}>
                 <td>{request.first_name} {request.last_name}</td>
                 <td style={{ textTransform: 'capitalize' }}>{request.leave_type}</td>
-                <td>{format(new Date(request.start_date), 'MMM dd, yyyy')}</td>
-                <td>{format(new Date(request.end_date), 'MMM dd, yyyy')}</td>
+                <td>{format(new Date(request.start_date + 'T00:00:00'), 'MMM dd, yyyy')}</td>
+                <td>{format(new Date(request.end_date + 'T00:00:00'), 'MMM dd, yyyy')}</td>
                 <td>
                   {request.leave_type.toLowerCase() === 'vacation'
                     ? `${request.days_requested / 8} days`
@@ -464,6 +464,16 @@ function TimeOff() {
                   required
                 />
               </div>
+
+              {formData.start_date && formData.end_date && (
+                <div className="form-group">
+                  <label>Date Range Preview</label>
+                  <p style={{ fontSize: '14px', color: '#666', margin: '5px 0' }}>
+                    {formData.start_date} to {formData.end_date} 
+                    ({Math.round((new Date(formData.end_date + 'T00:00:00') - new Date(formData.start_date + 'T00:00:00')) / (1000 * 60 * 60 * 24)) + 1} days)
+                  </p>
+                </div>
+              )}
 
               {(formData.leave_type === 'sick' || formData.leave_type === 'flexible') && (
                 <>
