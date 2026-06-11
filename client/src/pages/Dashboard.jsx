@@ -12,24 +12,25 @@ function Dashboard({ onLogout }) {
     { path: '/time-off', label: 'Time Off' }
   ]
 
-  const isDashboard = location.pathname === '/dashboard' || location.pathname === '/'
+  // Show back button on all pages except dashboard
+  const showBackButton = location.pathname !== '/dashboard' && location.pathname !== '/'
 
   return (
     <div>
       <div className="header">
-        <div className="container flex justify-between">
-          <div className="flex" style={{ alignItems: 'center' }}>
-            {!isDashboard && (
+        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            {showBackButton && (
               <button 
                 className="btn" 
                 onClick={() => navigate('/dashboard')}
-                style={{ marginRight: '15px', padding: '8px 12px' }}
+                style={{ padding: '8px 12px' }}
                 title="Back to Dashboard"
               >
                 🏠 Dashboard
               </button>
             )}
-            <h1>Work Scheduler</h1>
+            <h1 style={{ margin: 0 }}>Work Scheduler</h1>
           </div>
           <div className="flex">
             <nav>
