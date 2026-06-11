@@ -15,7 +15,9 @@ function TimeOff() {
     start_date: '',
     end_date: '',
     leave_type: 'vacation',
-    reason: ''
+    reason: '',
+    is_full_day: true,
+    hours_requested: ''
   })
   const [balanceFormData, setBalanceFormData] = useState({
     vacation_days: '',
@@ -93,6 +95,20 @@ function TimeOff() {
         submitData.employee_id = selectedEmployee.id
       }
       
+      // Calculate hours based on full day or custom
+      if (formData.leave_type === 'sick' || formData.leave_type === 'flexible') {
+        if (formData.is_full_day) {
+          // Calculate days from date range and convert to hours (8 hours per day)
+          const days = Math.round((new Date(formData.end_date) - new Date(formData.start_date)) / (1000 * 60 * 60 * 24)) + 1
+          submitData.hours_requested = days * 8
+        } else {
+          submitData.hours_requested = parseFloat(formData.hours_requested)
+          if (!submitData.hours_requested || submitData.hours_requested < 0.5) {
+            return alert('Please enter valid hours (minimum 0.5)')
+          }
+        }
+      }
+      
       if (submitData.employee_id) {
         await api.post('/leave/requests', submitData)
         setShowRequestModal(false)
@@ -101,7 +117,9 @@ function TimeOff() {
           start_date: '',
           end_date: '',
           leave_type: 'vacation',
-          reason: ''
+          reason: '',
+          is_full_day: true,
+          hours_requested: ''
         })
         fetchUserData()
         if (selectedEmployee) {
@@ -439,6 +457,74 @@ function TimeOff() {
                 />
               </div>
 
+              {(formData.leave_type === 'sick' || formData.leave_type === 'flexible') && (
+                <>
+                  <div className="form-group">
+                    <label>Time Off Type</label>
+                    <div style={{ display: 'flex', gap: '15px', marginTop: '5px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                        <input
+                          type="radio"
+                          name="time_type"
+                          checked={formData.is_full_day}
+                          onChange={() => setFormData({...formData, is_full_day: true})}
+                          style={{ width: 'auto' }}
+                        />
+                        Full Day (8 hours)
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                        <input
+                          type="radio"
+                          name="time_type"
+                          checked={!formData.is_full_day}
+                          onChange={() => setFormData({...formData, is_full_day: false})}
+                          style={{ width: 'auto' }}
+                        />
+                        Custom Hours
+                      </label>
+                    </div>
+                  </div>
+
+                  {!formData.is_full_day && (
+                    <div className="form-group">
+                      <label>Hours Requested</label>
+                      <input
+                        type="number"
+                        name="hours_requested"
+                        value={formData.hours_requested}
+                        onChange={(e) => setFormData({...formData, hours_requested: e.target.value})}
+                        min="0.5"
+                        max="24"
+                        step="0.5"
+                        placeholder="e.g., 2, 4, 6"
+                        required
+                        style={{ width: '150px' }}
+                      />
+                      <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                        Minimum 0.5 hours, maximum 24 hours
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {formData.leave_type === 'vacation' && (
+                <div className="form-group">
+                  <label>Days Requested</label>
+                  <input
+                    type="number"
+                    value={formData.start_date && formData.end_date 
+                      ? Math.round((new Date(formData.end_date) - new Date(formData.start_date)) / (1000 * 60 * 60 * 24)) + 1
+                      : ''}
+                    disabled
+                    style={{ backgroundColor: '#f5f5f5' }}
+                  />
+                  <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                    Based on start and end dates (8 hours per day)
+                  </p>
+                </div>
+              )}
+
               <div className="form-group">
                 <label>Reason</label>
                 <textarea
@@ -461,7 +547,9 @@ function TimeOff() {
                       start_date: '',
                       end_date: '',
                       leave_type: 'vacation',
-                      reason: ''
+                      reason: '',
+                      is_full_day: true,
+                      hours_requested: ''
                     })
                   }}
                   style={{ backgroundColor: '#6c757d', color: 'white' }}
