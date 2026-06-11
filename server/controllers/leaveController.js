@@ -63,6 +63,12 @@ const createTimeOffRequest = async (req, res) => {
   try {
     const { employee_id, start_date, end_date, leave_type, reason } = req.body;
 
+    console.log('Creating time off request:', { employee_id, start_date, end_date, leave_type, reason });
+
+    if (!employee_id || !start_date || !end_date || !leave_type) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
     const startDate = new Date(start_date);
     const endDate = new Date(end_date);
     
@@ -73,13 +79,19 @@ const createTimeOffRequest = async (req, res) => {
     const daysRequested = (endDate - startDate) / (1000 * 60 * 60 * 24) + 1;
     const currentYear = startDate.getFullYear();
 
+    console.log('Days requested:', daysRequested, 'Current year:', currentYear);
+
     const balanceResult = await pool.query(
       'SELECT * FROM leave_balances WHERE employee_id = $1 AND year = $2',
       [employee_id, currentYear]
     );
 
+    console.log('Balance result:', balanceResult.rows);
+
     if (balanceResult.rows.length === 0) {
-      return res.status(400).json({ error: 'No leave balance found for this employee' });
+      return res.status(400).json({ 
+        error: 'No leave balance found for this employee. Please contact HR to set up your leave balance.' 
+      });
     }
 
     const balance = balanceResult.rows[0];
@@ -99,6 +111,8 @@ const createTimeOffRequest = async (req, res) => {
         return res.status(400).json({ error: 'Invalid leave type' });
     }
 
+    console.log(`Available ${leave_type} days:`, availableDays);
+
     if (daysRequested > availableDays) {
       return res.status(400).json({ 
         error: `Insufficient ${leave_type.toLowerCase()} days balance. Available: ${availableDays}, Requested: ${daysRequested}` 
@@ -112,10 +126,12 @@ const createTimeOffRequest = async (req, res) => {
       [employee_id, start_date, end_date, leave_type, daysRequested, reason]
     );
 
+    console.log('Request created:', result.rows[0]);
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error('Create time off request error:', error);
-    res.status(500).json({ error: 'Failed to create time off request' });
+    console.error('Create time off request error:', error.message);
+    console.error('Full error:', error);
+    res.status(500).json({ error: 'Failed to create time off request: ' + error.message });
   }
 };
 
