@@ -21,8 +21,8 @@ function TimeOff() {
   })
   const [balanceFormData, setBalanceFormData] = useState({
     vacation_days: '',
-    sick_days: '',
-    flexible_days: ''
+    sick_hours: '',
+    flexible_hours: ''
   })
 
   useEffect(() => {
@@ -174,13 +174,18 @@ function TimeOff() {
     if (!selectedEmployee) return
 
     try {
-      await api.put(`/leave/balance/${selectedEmployee.id}`, balanceFormData)
+      // Convert days to hours for sick and flexible (multiply by 8)
+      await api.put(`/leave/balance/${selectedEmployee.id}`, {
+        vacation_days: balanceFormData.vacation_days,
+        sick_days: parseFloat(balanceFormData.sick_hours) * 8,
+        flexible_days: parseFloat(balanceFormData.flexible_hours) * 8
+      })
       setShowBalanceModal(false)
       fetchLeaveBalance(selectedEmployee.id)
       setBalanceFormData({
         vacation_days: '',
-        sick_days: '',
-        flexible_days: ''
+        sick_hours: '',
+        flexible_hours: ''
       })
     } catch (error) {
       console.error('Failed to update balance:', error)
@@ -191,8 +196,8 @@ function TimeOff() {
     if (leaveBalance) {
       setBalanceFormData({
         vacation_days: leaveBalance.vacation_days.toString(),
-        sick_days: leaveBalance.sick_days.toString(),
-        flexible_days: leaveBalance.flexible_days.toString()
+        sick_hours: leaveBalance.sick_days.toString(),
+        flexible_hours: leaveBalance.flexible_days.toString()
       })
     }
     setShowBalanceModal(true)
@@ -627,6 +632,9 @@ function TimeOff() {
         }}>
           <div className="card" style={{ width: '500px', margin: 0 }}>
             <h3>Update Leave Balance - {selectedEmployee?.first_name} {selectedEmployee?.last_name}</h3>
+            <p style={{ color: '#666', fontSize: '14px', marginBottom: '20px' }}>
+              Enter days for vacation. Sick and Flexible are stored in hours (1 day = 8 hours).
+            </p>
             
             <form onSubmit={handleUpdateBalance} className="mt-2">
               <div className="form-group">
@@ -642,27 +650,37 @@ function TimeOff() {
               </div>
 
               <div className="form-group">
-                <label>Sick Days</label>
+                <label>Sick Hours (Days × 8)</label>
                 <input
                   type="number"
-                  step="0.5"
+                  step="1"
                   min="0"
-                  value={balanceFormData.sick_days}
-                  onChange={(e) => setBalanceFormData({...balanceFormData, sick_days: e.target.value})}
-                  placeholder="e.g., 5"
+                  value={balanceFormData.sick_hours}
+                  onChange={(e) => setBalanceFormData({...balanceFormData, sick_hours: e.target.value})}
+                  placeholder="e.g., 40 (5 days × 8)"
                 />
+                {balanceFormData.sick_hours && (
+                  <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                    {balanceFormData.sick_hours} hours = {(parseFloat(balanceFormData.sick_hours) / 8).toFixed(1)} days
+                  </p>
+                )}
               </div>
 
               <div className="form-group">
-                <label>Flexible Days</label>
+                <label>Flexible Hours (Days × 8)</label>
                 <input
                   type="number"
-                  step="0.5"
+                  step="1"
                   min="0"
-                  value={balanceFormData.flexible_days}
-                  onChange={(e) => setBalanceFormData({...balanceFormData, flexible_days: e.target.value})}
-                  placeholder="e.g., 3"
+                  value={balanceFormData.flexible_hours}
+                  onChange={(e) => setBalanceFormData({...balanceFormData, flexible_hours: e.target.value})}
+                  placeholder="e.g., 24 (3 days × 8)"
                 />
+                {balanceFormData.flexible_hours && (
+                  <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                    {balanceFormData.flexible_hours} hours = {(parseFloat(balanceFormData.flexible_hours) / 8).toFixed(1)} days
+                  </p>
+                )}
               </div>
 
               <div className="flex" style={{ justifyContent: 'flex-end', gap: '10px' }}>
@@ -673,8 +691,8 @@ function TimeOff() {
                     setShowBalanceModal(false)
                     setBalanceFormData({
                       vacation_days: '',
-                      sick_days: '',
-                      flexible_days: ''
+                      sick_hours: '',
+                      flexible_hours: ''
                     })
                   }}
                   style={{ backgroundColor: '#6c757d', color: 'white' }}
