@@ -162,13 +162,13 @@ function Shifts() {
   const isEmployeeOnVacation = (employeeId, date) => {
     if (!showVacation) return false
     
-    const dateStr = format(date, 'yyyy-MM-dd')
+    const checkDate = format(date, 'yyyy-MM-dd')
     const vacation = vacationRequests.find(v => 
       v.employee_id === employeeId &&
       v.status === 'approved' &&
       v.leave_type.toLowerCase() === 'vacation' &&
-      dateStr >= v.start_date &&
-      dateStr <= v.end_date
+      checkDate >= v.start_date &&
+      checkDate <= v.end_date
     )
     return !!vacation
   }

@@ -327,13 +327,19 @@ function TimeOff() {
                 <td>{request.first_name} {request.last_name}</td>
                 <td style={{ textTransform: 'capitalize' }}>{request.leave_type}</td>
                 <td>
-                  {request.start_date && !isNaN(new Date(request.start_date + 'T00:00:00').getTime()) 
-                    ? format(new Date(request.start_date + 'T00:00:00'), 'MMM dd, yyyy') 
+                  {request.start_date && request.start_date.length === 10
+                    ? (() => {
+                        const [year, month, day] = request.start_date.split('-').map(Number)
+                        return format(new Date(year, month - 1, day), 'MMM dd, yyyy')
+                      })()
                     : '-'}
                 </td>
                 <td>
-                  {request.end_date && !isNaN(new Date(request.end_date + 'T00:00:00').getTime()) 
-                    ? format(new Date(request.end_date + 'T00:00:00'), 'MMM dd, yyyy') 
+                  {request.end_date && request.end_date.length === 10
+                    ? (() => {
+                        const [year, month, day] = request.end_date.split('-').map(Number)
+                        return format(new Date(year, month - 1, day), 'MMM dd, yyyy')
+                      })()
                     : '-'}
                 </td>
                 <td>
