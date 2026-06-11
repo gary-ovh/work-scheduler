@@ -76,18 +76,33 @@ function TimeOff() {
     e.preventDefault()
     
     try {
-      await api.post('/leave/requests', formData)
-      setShowRequestModal(false)
-      setFormData({
-        employee_id: '',
-        start_date: '',
-        end_date: '',
-        leave_type: 'vacation',
-        reason: ''
-      })
-      fetchUserData()
-      if (selectedEmployee) {
-        fetchLeaveBalance(selectedEmployee.id)
+      // For employees, use their own employee_id
+      const submitData = { ...formData }
+      
+      if (user?.role !== 'manager' && user?.role !== 'admin') {
+        // Employee submitting for themselves
+        if (!selectedEmployee) {
+          return alert('Employee profile not found')
+        }
+        submitData.employee_id = selectedEmployee.id
+      }
+      
+      if (submitData.employee_id) {
+        await api.post('/leave/requests', submitData)
+        setShowRequestModal(false)
+        setFormData({
+          employee_id: '',
+          start_date: '',
+          end_date: '',
+          leave_type: 'vacation',
+          reason: ''
+        })
+        fetchUserData()
+        if (selectedEmployee) {
+          fetchLeaveBalance(selectedEmployee.id)
+        }
+      } else {
+        alert('Please select an employee')
       }
     } catch (error) {
       console.error('Failed to submit request:', error.response?.data?.error || error.message)
