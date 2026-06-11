@@ -5,6 +5,8 @@ import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, 
 function Shifts() {
   const [shifts, setShifts] = useState([])
   const [employees, setEmployees] = useState([])
+  const [teams, setTeams] = useState([])
+  const [selectedTeam, setSelectedTeam] = useState('all')
   const [user, setUser] = useState(null)
   const [showModal, setShowModal] = useState(false)
   const [editingShift, setEditingShift] = useState(null)
@@ -37,9 +39,18 @@ function Shifts() {
       const payload = JSON.parse(atob(token.split('.')[1]))
       setUser({ id: payload.id, role: payload.role })
       
-      await Promise.all([fetchShifts(), fetchEmployees(), fetchLeaveRequests()])
+      await Promise.all([fetchShifts(), fetchEmployees(), fetchTeams(), fetchLeaveRequests()])
     } catch (error) {
       console.error('Failed to fetch user data:', error)
+    }
+  }
+
+  const fetchTeams = async () => {
+    try {
+      const res = await api.get('/teams')
+      setTeams(res.data)
+    } catch (error) {
+      console.error('Failed to fetch teams:', error)
     }
   }
 
@@ -156,15 +167,34 @@ function Shifts() {
   }
 
   const getShiftsForDay = (date) => {
-    return shifts.filter(shift => {
+    let dayShifts = shifts.filter(shift => {
       const shiftDate = new Date(shift.start_time)
       return shiftDate.toDateString() === date.toDateString()
     })
+    
+    // Filter by team if selected
+    if (selectedTeam !== 'all') {
+      const teamEmployeeIds = employees.filter(e => e.team_id === parseInt(selectedTeam)).map(e => e.id)
+      dayShifts = dayShifts.filter(shift => teamEmployeeIds.includes(shift.employee_id))
+    }
+    
+    return dayShifts
   }
 
   const getEmployeeName = (employeeId) => {
     const employee = employees.find(e => e.id === employeeId)
     return employee ? `${employee.first_name} ${employee.last_name}` : 'Unknown'
+  }
+
+  const getTeamColor = (employeeId) => {
+    const employee = employees.find(e => e.id === employeeId)
+    if (!employee || !employee.team_color) return '#007bff'
+    return employee.team_color
+  }
+
+  const getTeamName = (employeeId) => {
+    const employee = employees.find(e => e.id === employeeId)
+    return employee?.team_name || null
   }
 
   const isEmployeeOnLeave = (employeeId, date, leaveType) => {
@@ -232,6 +262,19 @@ function Shifts() {
         <h2>Shift Calendar</h2>
         
         <div className="flex" style={{ flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+          {/* Team Filter */}
+          <select
+            value={selectedTeam}
+            onChange={(e) => setSelectedTeam(e.target.value)}
+            style={{ padding: '8px 12px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '14px' }}
+            title="Filter by team"
+          >
+            <option value="all">All Teams</option>
+            {teams.map(team => (
+              <option key={team.id} value={team.id}>{team.name}</option>
+            ))}
+          </select>
+
           {/* View Mode Toggles */}
           <div className="flex" style={{ backgroundColor: '#f0f0f0', borderRadius: '5px', padding: '3px' }}>
             <button
@@ -423,8 +466,8 @@ function Shifts() {
                           <div 
                             key={shift.id}
                             style={{
-                              backgroundColor: '#e3f2fd',
-                              borderLeft: `3px solid #007bff`,
+                              backgroundColor: getTeamColor(shift.employee_id) + '20',
+                              borderLeft: `3px solid ${getTeamColor(shift.employee_id)}`,
                               padding: '4px 6px',
                               borderRadius: '3px',
                               fontSize: '11px'
@@ -435,7 +478,10 @@ function Shifts() {
                               {format(new Date(shift.start_time), 'h:mm a')} - {format(new Date(shift.end_time), 'h:mm a')}
                             </div>
                             {shift.position && (
-                              <div style={{ color: '#007bff', fontSize: '10px' }}>{shift.position}</div>
+                              <div style={{ color: getTeamColor(shift.employee_id), fontSize: '10px' }}>{shift.position}</div>
+                            )}
+                            {getTeamName(shift.employee_id) && (
+                              <div style={{ color: '#888', fontSize: '9px', marginTop: '2px' }}>{getTeamName(shift.employee_id)}</div>
                             )}
                           </div>
                         ))}
@@ -527,8 +573,8 @@ function Shifts() {
                       <div 
                         key={shift.id}
                         style={{
-                          backgroundColor: '#e3f2fd',
-                          borderLeft: `3px solid #007bff`,
+                          backgroundColor: getTeamColor(shift.employee_id) + '20',
+                          borderLeft: `3px solid ${getTeamColor(shift.employee_id)}`,
                           padding: '8px',
                           borderRadius: '4px',
                           fontSize: '12px'
@@ -539,7 +585,10 @@ function Shifts() {
                           {format(new Date(shift.start_time), 'h:mm a')} - {format(new Date(shift.end_time), 'h:mm a')}
                         </div>
                         {shift.position && (
-                          <div style={{ color: '#007bff', fontSize: '10px', marginTop: '2px' }}>{shift.position}</div>
+                          <div style={{ color: getTeamColor(shift.employee_id), fontSize: '10px', marginTop: '2px' }}>{shift.position}</div>
+                        )}
+                        {getTeamName(shift.employee_id) && (
+                          <div style={{ color: '#888', fontSize: '9px', marginTop: '2px' }}>{getTeamName(shift.employee_id)}</div>
                         )}
                         {isManager && (
                           <div style={{ marginTop: '5px', display: 'flex', gap: '5px' }}>
@@ -732,6 +781,8 @@ function Shifts() {
                           const leftPercent = (startHour / 24) * 100
                           const widthPercent = (duration / 24) * 100
                           
+                          const teamColor = getTeamColor(employee.id)
+                          
                           return (
                             <div
                               key={shift.id}
@@ -741,7 +792,7 @@ function Shifts() {
                                 width: `${widthPercent}%`,
                                 top: `${idx * 22 + 5}px`,
                                 height: '18px',
-                                backgroundColor: '#4CAF50',
+                                backgroundColor: teamColor,
                                 borderRadius: '3px',
                                 cursor: isManager ? 'pointer' : 'default',
                                 display: 'flex',
@@ -756,7 +807,7 @@ function Shifts() {
                                 whiteSpace: 'nowrap'
                               }}
                               onClick={() => isManager && handleEdit(shift)}
-                              title={`${employee.first_name} ${employee.last_name}\n${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}\n${shift.position || ''}`}
+                              title={`${employee.first_name} ${employee.last_name}\n${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}\n${shift.position || ''}\nTeam: ${getTeamName(employee.id) || 'Unassigned'}`}
                             >
                               {duration >= 1 && (
                                 <span>
@@ -795,19 +846,35 @@ function Shifts() {
                 fontSize: '12px'
               }}>
                 <strong>Legend:</strong>
-                <span style={{ 
-                  display: 'inline-block', 
-                  width: '20px', 
-                  height: '12px', 
-                  backgroundColor: '#4CAF50', 
-                  borderRadius: '2px',
-                  marginLeft: '10px',
-                  marginRight: '5px'
-                }}></span>
-                Scheduled Shift (click to edit)
-                <span style={{ marginLeft: '20px', color: '#666' }}>
+                <div style={{ marginTop: '10px', display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                  {teams.map(team => (
+                    <span key={team.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      <span style={{ 
+                        display: 'inline-block', 
+                        width: '20px', 
+                        height: '12px', 
+                        backgroundColor: team.color, 
+                        borderRadius: '2px'
+                      }}></span>
+                      {team.name}
+                    </span>
+                  ))}
+                  {teams.length === 0 && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      <span style={{ 
+                        display: 'inline-block', 
+                        width: '20px', 
+                        height: '12px', 
+                        backgroundColor: '#4CAF50', 
+                        borderRadius: '2px'
+                      }}></span>
+                      Scheduled Shift (click to edit)
+                    </span>
+                  )}
+                </div>
+                <div style={{ marginTop: '10px', color: '#666' }}>
                   Grid lines show 6-hour intervals
-                </span>
+                </div>
               </div>
             </div>
 

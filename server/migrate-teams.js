@@ -1,8 +1,17 @@
-const pool = require('./config/database');
+const { Pool } = require('pg');
+
+// Connect as postgres superuser
+const pool = new Pool({
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || '5432',
+  user: 'postgres',
+  password: process.env.DB_PASSWORD || 'postgres',
+  database: process.env.DB_NAME || 'work_scheduler'
+});
 
 const migrateTeams = async () => {
   try {
-    console.log('Running teams migration...');
+    console.log('Running teams migration as postgres...');
     
     // Create teams table if not exists
     await pool.query(`
@@ -43,6 +52,14 @@ const migrateTeams = async () => {
       ON CONFLICT (name) DO NOTHING
     `);
     console.log('✓ Sample teams inserted');
+    
+    // Grant permissions to work_scheduler user
+    await pool.query(`
+      GRANT ALL PRIVILEGES ON TABLE teams TO work_scheduler;
+      GRANT USAGE, SELECT ON SEQUENCE teams_id_seq TO work_scheduler;
+      GRANT ALL PRIVILEGES ON TABLE employees TO work_scheduler;
+    `);
+    console.log('✓ Permissions granted to work_scheduler user');
     
     console.log('\nMigration completed successfully!');
     await pool.end();
