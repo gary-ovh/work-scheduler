@@ -333,45 +333,34 @@ function TimeOff() {
                 <td>
                   {request.start_date ? (() => {
                     try {
-                      // Handle various date formats from backend
-                      const dateStr = request.start_date.toString()
-                      if (dateStr.length === 10 && dateStr.includes('-')) {
-                        const [year, month, day] = dateStr.split('-').map(Number)
-                        return format(new Date(year, month - 1, day), 'MMM dd, yyyy')
-                      }
-                      // Fallback for ISO format
-                      const date = new Date(dateStr)
-                      if (!isNaN(date.getTime())) {
-                        return format(date, 'MMM dd, yyyy')
-                      }
+                      // Extract date from ISO string without timezone conversion
+                      const isoStr = request.start_date.toString()
+                      const datePart = isoStr.split('T')[0] // "2026-06-15"
+                      const [year, month, day] = datePart.split('-').map(Number)
+                      return format(new Date(year, month - 1, day), 'MMM dd, yyyy')
                     } catch (e) {
                       console.error('Date parse error:', e)
+                      return '-'
                     }
-                    return '-'
                   })() : '-'}
                 </td>
                 <td>
                   {request.end_date ? (() => {
                     try {
-                      const dateStr = request.end_date.toString()
-                      if (dateStr.length === 10 && dateStr.includes('-')) {
-                        const [year, month, day] = dateStr.split('-').map(Number)
-                        return format(new Date(year, month - 1, day), 'MMM dd, yyyy')
-                      }
-                      const date = new Date(dateStr)
-                      if (!isNaN(date.getTime())) {
-                        return format(date, 'MMM dd, yyyy')
-                      }
+                      const isoStr = request.end_date.toString()
+                      const datePart = isoStr.split('T')[0]
+                      const [year, month, day] = datePart.split('-').map(Number)
+                      return format(new Date(year, month - 1, day), 'MMM dd, yyyy')
                     } catch (e) {
                       console.error('Date parse error:', e)
+                      return '-'
                     }
-                    return '-'
                   })() : '-'}
                 </td>
                 <td>
                   {request.leave_type && request.leave_type.toLowerCase() === 'vacation'
-                    ? `${(request.days_requested || 0) / 8} days`
-                    : `${request.days_requested || 0} hrs`}
+                    ? `${(parseFloat(request.days_requested) || 0) / 8} days`
+                    : `${parseFloat(request.days_requested) || 0} hrs`}
                 </td>
                 <td style={{ maxWidth: '200px', fontSize: '13px' }}>
                   {request.reason || '-'}

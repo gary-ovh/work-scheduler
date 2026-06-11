@@ -169,8 +169,12 @@ function Shifts() {
       if (v.status !== 'approved') return false
       if (v.leave_type.toLowerCase() !== 'vacation') return false
       
+      // Extract date parts from ISO strings for comparison
+      const startDate = v.start_date.toString().split('T')[0]
+      const endDate = v.end_date.toString().split('T')[0]
+      
       // Compare date strings directly
-      return checkDate >= v.start_date && checkDate <= v.end_date
+      return checkDate >= startDate && checkDate <= endDate
     })
     return !!vacation
   }
