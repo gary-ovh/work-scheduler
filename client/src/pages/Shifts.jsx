@@ -150,23 +150,22 @@ function Shifts({ onLogout }) {
   const navigateWeek = (direction) => {
     if (viewMode === 'month') {
       setWeekStart(direction === 'next' ? addWeeks(weekStart, 4) : subWeeks(weekStart, 4))
-    } else if (viewMode === 'week' && show5DayWeek) {
-      // For Mon-Fri view, navigate by 5 days
-      const newDate = direction === 'next' ? new Date(weekStart) : new Date(weekStart)
-      newDate.setDate(newDate.getDate() + (direction === 'next' ? 5 : -5))
-      setWeekStart(newDate)
+    } else if (viewMode === 'week') {
+      // Always navigate by full weeks (7 days), even in Mon-Fri mode
+      setWeekStart(direction === 'next' ? addWeeks(weekStart, 1) : subWeeks(weekStart, 1))
     } else {
       setWeekStart(direction === 'next' ? addWeeks(weekStart, 1) : subWeeks(weekStart, 1))
     }
   }
 
   const goToToday = () => {
+    const today = new Date()
     if (viewMode === 'month') {
-      setWeekStart(startOfMonth(new Date()))
+      setWeekStart(startOfMonth(today))
     } else if (viewMode === 'week') {
-      setWeekStart(startOfWeek(new Date()))
+      setWeekStart(startOfWeek(today))
     } else {
-      setWeekStart(new Date())
+      setWeekStart(today)
     }
   }
 
@@ -220,13 +219,22 @@ function Shifts({ onLogout }) {
           {/* Navigation */}
           <div className="flex" style={{ alignItems: 'center', gap: '5px' }}>
             <button className="btn" onClick={() => navigateWeek('prev')}>&lt;</button>
-            <span style={{ fontWeight: '600', minWidth: '200px', textAlign: 'center' }}>
+            <span style={{ fontWeight: '600', minWidth: '250px', textAlign: 'center' }}>
               {viewMode === 'month' 
                 ? format(weekStart, 'MMMM yyyy')
                 : viewMode === 'week' && show5DayWeek
-                ? `${format(startOfWeek(weekStart, { weekStartsOn: 1 }), 'MMM dd')} - ${format(new Date(weekStart.getTime() + 4 * 24 * 60 * 60 * 1000), 'MMM dd, yyyy')}`
+                ? (() => {
+                    const monday = startOfWeek(weekStart, { weekStartsOn: 1 })
+                    const friday = new Date(monday)
+                    friday.setDate(monday.getDate() + 4)
+                    return `${format(monday, 'MMM dd')} - ${format(friday, 'MMM dd, yyyy')}`
+                  })()
                 : viewMode === 'week'
-                ? `${format(startOfWeek(weekStart), 'MMM dd')} - ${format(endOfWeek(weekStart), 'MMM dd, yyyy')}`
+                ? (() => {
+                    const sunday = startOfWeek(weekStart)
+                    const saturday = endOfWeek(weekStart)
+                    return `${format(sunday, 'MMM dd')} - ${format(saturday, 'MMM dd, yyyy')}`
+                  })()
                 : format(weekStart, 'MMMM dd, yyyy')
               }
             </span>
