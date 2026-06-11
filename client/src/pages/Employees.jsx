@@ -227,7 +227,7 @@ function Employees() {
                         </button>
                       )}
                       {/* Only admins can delete, and never delete other admins */}
-                      {user?.role === 'admin' && employee.role !== 'admin' && (
+                      {((user?.role === 'admin' || user?.role === 'manager') && employee.role !== 'admin') && (
                         <button 
                           className="btn btn-danger" 
                           onClick={() => handleDelete(employee.id)}
