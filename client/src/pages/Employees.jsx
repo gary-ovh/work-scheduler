@@ -5,6 +5,9 @@ function Employees() {
   const [employees, setEmployees] = useState([])
   const [user, setUser] = useState(null)
   const [showModal, setShowModal] = useState(false)
+  const [showResetModal, setShowResetModal] = useState(false)
+  const [selectedEmployee, setSelectedEmployee] = useState(null)
+  const [resetPassword, setResetPassword] = useState('')
   const [editingEmployee, setEditingEmployee] = useState(null)
   const [formData, setFormData] = useState({
     first_name: '',
@@ -79,6 +82,33 @@ function Employees() {
       role: employee.role || 'employee'
     })
     setShowModal(true)
+  }
+
+  const handleResetPassword = (employee) => {
+    setSelectedEmployee(employee)
+    setResetPassword('')
+    setShowResetModal(true)
+  }
+
+  const submitResetPassword = async (e) => {
+    e.preventDefault()
+    
+    if (resetPassword.length < 6) {
+      alert('Password must be at least 6 characters')
+      return
+    }
+
+    try {
+      await api.put('/auth/reset-password', {
+        userId: selectedEmployee.user_id,
+        newPassword: resetPassword
+      })
+      setShowResetModal(false)
+      alert(`Password for ${selectedEmployee.first_name} ${selectedEmployee.last_name} has been reset`)
+    } catch (error) {
+      console.error('Failed to reset password:', error)
+      alert(error.response?.data?.error || 'Failed to reset password')
+    }
   }
 
   const handleDelete = async (id) => {
@@ -186,6 +216,15 @@ function Employees() {
                             </button>
                           )}
                         </>
+                      )}
+                      {(user?.role === 'admin' || user?.role === 'manager') && employee.role !== 'admin' && (
+                        <button 
+                          className="btn" 
+                          onClick={() => handleResetPassword(employee)}
+                          style={{ marginRight: '5px', fontSize: '12px', padding: '4px 8px', backgroundColor: '#17a2b8', color: 'white' }}
+                        >
+                          Reset Password
+                        </button>
                       )}
                       <button 
                         className="btn btn-danger" 
@@ -345,6 +384,57 @@ function Employees() {
                 </button>
                 <button type="submit" className="btn btn-primary">
                   {editingEmployee ? 'Update' : 'Add'} Employee
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showResetModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div className="card" style={{ width: '450px', margin: 0 }}>
+            <h3>Reset Password</h3>
+            <p style={{ color: '#666', marginBottom: '15px' }}>
+              Reset password for <strong>{selectedEmployee?.first_name} {selectedEmployee?.last_name}</strong>
+            </p>
+
+            <form onSubmit={submitResetPassword}>
+              <div className="form-group">
+                <label>New Password</label>
+                <input
+                  type="password"
+                  value={resetPassword}
+                  onChange={(e) => setResetPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  placeholder="Enter new password (min 6 characters)"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex" style={{ justifyContent: 'flex-end', gap: '10px' }}>
+                <button 
+                  type="button" 
+                  className="btn" 
+                  onClick={() => setShowResetModal(false)}
+                  style={{ backgroundColor: '#6c757d', color: 'white' }}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Reset Password
                 </button>
               </div>
             </form>

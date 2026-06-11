@@ -7,6 +7,7 @@ import Shifts from './pages/Shifts'
 import Employees from './pages/Employees'
 import TimeOff from './pages/TimeOff'
 import Templates from './pages/Templates'
+import Settings from './pages/Settings'
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -49,9 +50,10 @@ function App() {
         >
           <Route index element={<DashboardHome />} />
           <Route path="shifts" element={<Shifts />} />
+          <Route path="templates" element={<Templates />} />
           <Route path="employees" element={<Employees />} />
           <Route path="time-off" element={<TimeOff />} />
-          <Route path="templates" element={<Templates />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
         <Route path="/" element={<Navigate to="/dashboard" />} />
       </Routes>

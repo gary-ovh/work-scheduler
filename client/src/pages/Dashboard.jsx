@@ -62,6 +62,17 @@ function Dashboard({ onLogout }) {
                   {item.label}
                 </Link>
               ))}
+              <Link
+                to="/dashboard/settings"
+                style={{
+                  marginLeft: '10px',
+                  textDecoration: 'none',
+                  color: location.pathname === '/dashboard/settings' ? '#007bff' : '#666',
+                  fontWeight: location.pathname === '/dashboard/settings' ? '600' : '400'
+                }}
+              >
+                ⚙️ Settings
+              </Link>
             </nav>
             <button className="btn btn-danger" onClick={onLogout}>
               Logout
