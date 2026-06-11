@@ -52,9 +52,19 @@ function DashboardHome() {
       
       // Filter shifts based on role
       let employeeShifts = shifts
+      let employeePendingRequests = []
       if (!isAdminOrManager && currentEmployee) {
         // Employee sees only their own shifts
         employeeShifts = shifts.filter(s => s.employee_id === currentEmployee.id)
+        
+        // Employee sees only their own pending requests
+        try {
+          const requestsRes = await api.get(`/leave/requests?employee_id=${currentEmployee.id}`)
+          const requests = requestsRes.data
+          employeePendingRequests = requests.filter(r => r.status === 'pending')
+        } catch (error) {
+          console.log('Could not fetch employee requests')
+        }
       }
       
       const upcoming = employeeShifts.filter(s => new Date(s.start_time) > now)
@@ -63,7 +73,7 @@ function DashboardHome() {
         totalShifts: employeeShifts.length,
         totalEmployees: isAdminOrManager ? employees.length : null,
         upcomingShifts: upcoming.length,
-        pendingRequests: isAdminOrManager ? pending.length : null
+        pendingRequests: isAdminOrManager ? pending.length : employeePendingRequests.length
       })
 
       setRecentShifts(employeeShifts.slice(0, 5))
@@ -111,14 +121,14 @@ function DashboardHome() {
           </p>
         </div>
 
-        {isAdminOrManager && (
-          <div className="card" style={{ textAlign: 'center' }}>
-            <h3 style={{ fontSize: '36px', color: '#dc3545', marginBottom: '10px' }}>
-              {stats.pendingRequests}
-            </h3>
-            <p style={{ color: '#666' }}>Pending Requests</p>
-          </div>
-        )}
+        <div className="card" style={{ textAlign: 'center' }}>
+          <h3 style={{ fontSize: '36px', color: '#dc3545', marginBottom: '10px' }}>
+            {stats.pendingRequests}
+          </h3>
+          <p style={{ color: '#666' }}>
+            {isAdminOrManager ? 'Pending Requests' : 'My Pending Requests'}
+          </p>
+        </div>
       </div>
 
       <div className="card">
