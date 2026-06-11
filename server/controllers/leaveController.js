@@ -382,5 +382,6 @@ module.exports = {
   getAllTimeOffRequests,
   getTimeOffRequestById,
   reviewTimeOffRequest,
-  deleteTimeOffRequest
+  deleteTimeOffRequest,
+  cancelTimeOffRequest
 };
