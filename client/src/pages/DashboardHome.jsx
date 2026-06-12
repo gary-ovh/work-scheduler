@@ -14,6 +14,15 @@ function DashboardHome() {
   })
   const [recentShifts, setRecentShifts] = useState([])
 
+  // Parse timestamp string as local time without timezone conversion
+  const parseLocalDate = (timestampStr) => {
+    if (!timestampStr) return null
+    const [datePart, timePart] = timestampStr.split(' ')
+    const [year, month, day] = datePart.split('-').map(Number)
+    const [hour, minute, second] = timePart.split(':').map(Number)
+    return new Date(year, month - 1, day, hour, minute, second || 0)
+  }
+
   useEffect(() => {
     fetchDashboardData()
   }, [])
@@ -68,7 +77,10 @@ function DashboardHome() {
         }
       }
       
-      const upcoming = employeeShifts.filter(s => new Date(s.start_time) > now)
+      const upcoming = employeeShifts.filter(s => {
+        const shiftDate = parseLocalDate(s.start_time)
+        return shiftDate && shiftDate > now
+      })
 
       setStats({
         totalShifts: employeeShifts.length,
@@ -152,8 +164,8 @@ function DashboardHome() {
             {recentShifts.map((shift) => (
               <tr key={shift.id}>
                 <td>{shift.first_name} {shift.last_name}</td>
-                <td>{format(new Date(shift.start_time), 'MMM dd, yyyy hh:mm a')}</td>
-                <td>{format(new Date(shift.end_time), 'MMM dd, yyyy hh:mm a')}</td>
+                <td>{format(parseLocalDate(shift.start_time), 'MMM dd, yyyy hh:mm a')}</td>
+                <td>{format(parseLocalDate(shift.end_time), 'MMM dd, yyyy hh:mm a')}</td>
                 <td>{shift.status}</td>
               </tr>
             ))}

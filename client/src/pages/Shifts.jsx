@@ -113,10 +113,14 @@ function Shifts() {
 
   const handleEdit = (shift) => {
     setEditingShift(shift)
+    const [datePart, timePart] = shift.start_time.split(' ')
+    const startDt = `${datePart}T${timePart.slice(0, 5)}`
+    const [datePart2, timePart2] = shift.end_time.split(' ')
+    const endDt = `${datePart2}T${timePart2.slice(0, 5)}`
     setFormData({
       employee_id: shift.employee_id,
-      start_time: shift.start_time.slice(0, 16),
-      end_time: shift.end_time.slice(0, 16),
+      start_time: startDt,
+      end_time: endDt,
       position: shift.position || '',
       notes: shift.notes || ''
     })
@@ -168,9 +172,9 @@ function Shifts() {
 
   const getShiftsForDay = (date) => {
     let dayShifts = shifts.filter(shift => {
-      // Parse the timestamp and convert to local time for comparison
-      const shiftDate = new Date(shift.start_time)
-      return shiftDate.toDateString() === date.toDateString()
+      // Parse the timestamp as local time for comparison
+      const shiftDate = parseLocalDate(shift.start_time)
+      return shiftDate && shiftDate.toDateString() === date.toDateString()
     })
     
     // Filter by team if selected
@@ -198,9 +202,20 @@ function Shifts() {
     return employee?.team_name || null
   }
 
+  // Parse timestamp string as local time without timezone conversion
+  // Backend returns "YYYY-MM-DD HH:MM:SS" format
+  const parseLocalDate = (timestampStr) => {
+    if (!timestampStr) return null
+    const [datePart, timePart] = timestampStr.split(' ')
+    const [year, month, day] = datePart.split('-').map(Number)
+    const [hour, minute, second] = timePart.split(':').map(Number)
+    return new Date(year, month - 1, day, hour, minute, second || 0)
+  }
+
   // Format time showing local time from stored timestamp
   const formatLocalTime = (timestamp) => {
-    const date = new Date(timestamp)
+    const date = parseLocalDate(timestamp)
+    if (!date) return ''
     return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
   }
 
@@ -488,7 +503,7 @@ function Shifts() {
                           >
                             <div style={{ fontWeight: '600' }}>{getEmployeeName(shift.employee_id)}</div>
                             <div style={{ color: '#666' }}>
-                              {format(new Date(shift.start_time), 'h:mm a')} - {format(new Date(shift.end_time), 'h:mm a')}
+                              {format(parseLocalDate(shift.start_time), 'h:mm a')} - {format(parseLocalDate(shift.end_time), 'h:mm a')}
                             </div>
                             {shift.position && (
                               <div style={{ color: getTeamColor(shift.employee_id), fontSize: '10px' }}>{shift.position}</div>
@@ -595,7 +610,7 @@ function Shifts() {
                       >
                         <div style={{ fontWeight: '600', marginBottom: '3px' }}>{getEmployeeName(shift.employee_id)}</div>
                         <div style={{ color: '#666', fontSize: '11px' }}>
-                          {format(new Date(shift.start_time), 'h:mm a')} - {format(new Date(shift.end_time), 'h:mm a')}
+                          {format(parseLocalDate(shift.start_time), 'h:mm a')} - {format(parseLocalDate(shift.end_time), 'h:mm a')}
                         </div>
                         {shift.position && (
                           <div style={{ color: getTeamColor(shift.employee_id), fontSize: '10px', marginTop: '2px' }}>{shift.position}</div>
@@ -789,8 +804,8 @@ function Shifts() {
 
                         {/* Shift bars */}
                         {employeeShifts.map((shift, idx) => {
-                          const startTime = new Date(shift.start_time)
-                          const endTime = new Date(shift.end_time)
+                          const startTime = parseLocalDate(shift.start_time)
+                          const endTime = parseLocalDate(shift.end_time)
                           
                           const startHour = startTime.getHours() + startTime.getMinutes() / 60
                           const endHour = endTime.getHours() + endTime.getMinutes() / 60
@@ -930,8 +945,8 @@ function Shifts() {
                   {getShiftsForDay(weekStart).map(shift => (
                     <tr key={shift.id}>
                       <td>{getEmployeeName(shift.employee_id)}</td>
-                      <td>{format(new Date(shift.start_time), 'h:mm a')}</td>
-                      <td>{format(new Date(shift.end_time), 'h:mm a')}</td>
+                      <td>{format(parseLocalDate(shift.start_time), 'h:mm a')}</td>
+                      <td>{format(parseLocalDate(shift.end_time), 'h:mm a')}</td>
                       <td>{shift.position || '-'}</td>
                       <td>{shift.notes || '-'}</td>
                       {isManager && (

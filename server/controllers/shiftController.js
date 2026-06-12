@@ -5,10 +5,13 @@ const getAllShifts = async (req, res) => {
     const { startDate, endDate } = req.query;
     
     let query = `
-      SELECT s.*, e.first_name, e.last_name, e.position
+      SELECT s.id, s.employee_id, 
+        TO_CHAR(s.start_time, 'YYYY-MM-DD HH24:MI:SS') as start_time,
+        TO_CHAR(s.end_time, 'YYYY-MM-DD HH24:MI:SS') as end_time,
+        s.position, s.status, s.notes, s.created_at, s.updated_at,
+        e.first_name, e.last_name, e.position as employee_position
       FROM shifts s
       JOIN employees e ON s.employee_id = e.id
-      ORDER BY s.start_time ASC
     `;
     
     const values = [];
@@ -27,6 +30,8 @@ const getAllShifts = async (req, res) => {
     if (conditions.length > 0) {
       query += ' WHERE ' + conditions.join(' AND ');
     }
+
+    query += ' ORDER BY s.start_time ASC';
 
     const result = await pool.query(query, values);
     res.json(result.rows);

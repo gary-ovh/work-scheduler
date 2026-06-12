@@ -15,14 +15,6 @@ const getAllTemplates = async (req, res) => {
     query += ' ORDER BY name ASC';
 
     const result = await pool.query(query, values);
-    
-    console.log('Fetched templates:', result.rows.map(t => ({
-      id: t.id,
-      name: t.name,
-      start_time: t.start_time,
-      end_time: t.end_time
-    })));
-    
     res.json(result.rows);
   } catch (error) {
     console.error('Get templates error:', error);
@@ -50,13 +42,9 @@ const createTemplate = async (req, res) => {
   try {
     let { name, start_time, end_time, position, color, created_by } = req.body;
 
-    console.log('Creating template with:', { name, start_time, end_time, position });
-
     // Ensure times are in HH:MM:SS format
     if (start_time && start_time.length === 5) start_time += ':00';
     if (end_time && end_time.length === 5) end_time += ':00';
-
-    console.log('After format:', { start_time, end_time });
 
     if (new Date(`2000-01-01 ${start_time}`) >= new Date(`2000-01-01 ${end_time}`)) {
       return res.status(400).json({ error: 'End time must be after start time' });
@@ -66,8 +54,6 @@ const createTemplate = async (req, res) => {
       'INSERT INTO shift_templates (name, start_time, end_time, position, color, created_by) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
       [name, start_time, end_time, position, color || '#007bff', created_by]
     );
-
-    console.log('Template created:', result.rows[0]);
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
