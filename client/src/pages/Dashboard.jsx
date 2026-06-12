@@ -35,6 +35,7 @@ function Dashboard({ onLogout }) {
 
   const navItems = [
     { path: '/dashboard', label: 'Dashboard' },
+    { path: '/dashboard/time-clock', label: 'Time Clock' },
     { path: '/dashboard/shifts', label: 'Shifts' },
     ...(user?.role === 'manager' || user?.role === 'admin' ? [{ path: '/dashboard/templates', label: 'Templates' }] : []),
     { path: '/dashboard/employees', label: 'Employees' },

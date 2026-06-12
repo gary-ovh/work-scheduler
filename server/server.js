@@ -10,6 +10,7 @@ const employeeRoutes = require('./routes/employees');
 const leaveRoutes = require('./routes/leave');
 const templateRoutes = require('./routes/templates');
 const teamRoutes = require('./routes/teams');
+const timeClockRoutes = require('./routes/timeClock');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -68,6 +69,7 @@ app.use('/api/employees', employeeRoutes);
 app.use('/api/leave', leaveRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/teams', teamRoutes);
+app.use('/api/time-clock', timeClockRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Work Scheduler API' });

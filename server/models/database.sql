@@ -96,3 +96,22 @@ CREATE INDEX idx_time_off_status ON time_off_requests(status);
 CREATE INDEX idx_leave_balances_employee ON leave_balances(employee_id, year);
 CREATE INDEX idx_employees_team ON employees(team_id);
 CREATE INDEX idx_teams_active ON teams(is_active);
+
+CREATE TABLE IF NOT EXISTS time_clock (
+  id SERIAL PRIMARY KEY,
+  employee_id INTEGER REFERENCES employees(id) ON DELETE CASCADE,
+  clock_in TIMESTAMP NOT NULL,
+  clock_out TIMESTAMP,
+  break_start TIMESTAMP,
+  break_end TIMESTAMP,
+  total_hours DECIMAL(10, 2) DEFAULT 0,
+  break_duration INTEGER DEFAULT 0, -- in minutes
+  status VARCHAR(50) DEFAULT 'clocked_out', -- clocked_in, on_break, clocked_out
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_time_clock_employee ON time_clock(employee_id);
+CREATE INDEX idx_time_clock_status ON time_clock(status);
+CREATE INDEX idx_time_clock_clock_in ON time_clock(clock_in);

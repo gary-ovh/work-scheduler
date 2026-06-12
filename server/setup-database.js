@@ -119,6 +119,8 @@ const setupDatabase = async () => {
        ('Closing Shift', '20:00:00', '04:00:00', 'Supervisor', '#E91E63', 1)`
     );
 
+    console.log('Note: Time clock table created. Employees can now clock in/out.');
+
     console.log('Sample admin user created:');
     console.log('  Email: admin@example.com');
     console.log('  Password: admin123');
