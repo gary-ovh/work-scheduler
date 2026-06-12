@@ -2,7 +2,23 @@ const pool = require('../config/database');
 
 const clockIn = async (req, res) => {
   try {
-    const employeeId = req.body.employee_id || req.user.employee_id;
+    let employeeId = req.body.employee_id;
+    
+    // If no employee_id provided, get it from the authenticated user
+    if (!employeeId && req.user) {
+      const empResult = await pool.query(
+        'SELECT id FROM employees WHERE user_id = $1',
+        [req.user.id]
+      );
+      if (empResult.rows.length > 0) {
+        employeeId = empResult.rows[0].id;
+      }
+    }
+    
+    if (!employeeId) {
+      return res.status(400).json({ error: 'Employee ID required' });
+    }
+    
     const notes = req.body.notes || '';
 
     // Check if already clocked in
@@ -32,7 +48,22 @@ const clockIn = async (req, res) => {
 
 const clockOut = async (req, res) => {
   try {
-    const employeeId = req.body.employee_id || req.user.employee_id;
+    let employeeId = req.body.employee_id;
+    
+    // If no employee_id provided, get it from the authenticated user
+    if (!employeeId && req.user) {
+      const empResult = await pool.query(
+        'SELECT id FROM employees WHERE user_id = $1',
+        [req.user.id]
+      );
+      if (empResult.rows.length > 0) {
+        employeeId = empResult.rows[0].id;
+      }
+    }
+    
+    if (!employeeId) {
+      return res.status(400).json({ error: 'Employee ID required' });
+    }
 
     // Get current time clock entry
     const current = await pool.query(
@@ -77,7 +108,22 @@ const clockOut = async (req, res) => {
 
 const startBreak = async (req, res) => {
   try {
-    const employeeId = req.body.employee_id || req.user.employee_id;
+    let employeeId = req.body.employee_id;
+    
+    // If no employee_id provided, get it from the authenticated user
+    if (!employeeId && req.user) {
+      const empResult = await pool.query(
+        'SELECT id FROM employees WHERE user_id = $1',
+        [req.user.id]
+      );
+      if (empResult.rows.length > 0) {
+        employeeId = empResult.rows[0].id;
+      }
+    }
+    
+    if (!employeeId) {
+      return res.status(400).json({ error: 'Employee ID required' });
+    }
 
     // Get current time clock entry
     const current = await pool.query(
@@ -111,7 +157,22 @@ const startBreak = async (req, res) => {
 
 const endBreak = async (req, res) => {
   try {
-    const employeeId = req.body.employee_id || req.user.employee_id;
+    let employeeId = req.body.employee_id;
+    
+    // If no employee_id provided, get it from the authenticated user
+    if (!employeeId && req.user) {
+      const empResult = await pool.query(
+        'SELECT id FROM employees WHERE user_id = $1',
+        [req.user.id]
+      );
+      if (empResult.rows.length > 0) {
+        employeeId = empResult.rows[0].id;
+      }
+    }
+    
+    if (!employeeId) {
+      return res.status(400).json({ error: 'Employee ID required' });
+    }
 
     // Get current time clock entry
     const current = await pool.query(

@@ -72,12 +72,16 @@ function TimeClockWidget() {
 
   const handleClockIn = async () => {
     try {
-      await api.post('/time-clock/clock-in', {
+      const res = await api.post('/time-clock/clock-in', {
         employee_id: employee.id,
         notes
       })
+      console.log('Clock in response:', res.data)
       setNotes('')
-      await refreshAll()
+      // Force status to clocked_in immediately
+      setStatus('clocked_in')
+      setTimeClockData(res.data.timeClock)
+      await fetchTeamStatus(employee.team_id)
     } catch (error) {
       alert(error.response?.data?.error || 'Failed to clock in')
     }
@@ -89,7 +93,10 @@ function TimeClockWidget() {
     try {
       const res = await api.post('/time-clock/clock-out', { employee_id: employee.id })
       alert(`Clocked out successfully!\nTotal hours: ${res.data.totalHours}`)
-      await refreshAll()
+      // Force status to clocked_out immediately
+      setStatus('clocked_out')
+      setTimeClockData(null)
+      await fetchTeamStatus(employee.team_id)
     } catch (error) {
       alert(error.response?.data?.error || 'Failed to clock out')
     }
@@ -97,8 +104,12 @@ function TimeClockWidget() {
 
   const handleStartBreak = async () => {
     try {
-      await api.post('/time-clock/break/start', { employee_id: employee.id })
-      await refreshAll()
+      const res = await api.post('/time-clock/break/start', { employee_id: employee.id })
+      console.log('Start break response:', res.data)
+      // Force status to on_break immediately
+      setStatus('on_break')
+      setTimeClockData(res.data.timeClock)
+      await fetchTeamStatus(employee.team_id)
     } catch (error) {
       alert(error.response?.data?.error || 'Failed to start break')
     }

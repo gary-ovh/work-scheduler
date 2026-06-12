@@ -38,7 +38,7 @@ router.post('/break/end', [
 ], timeClockController.endBreak);
 
 // Status endpoints
-router.get('/status', [
+router.get('/status/:employeeId?', [
   param('employeeId').optional().isInt().withMessage('Valid employee ID is required'),
   validate
 ], timeClockController.getCurrentStatus);
