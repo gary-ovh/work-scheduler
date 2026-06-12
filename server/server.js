@@ -57,7 +57,7 @@ app.use(helmet({
 // Security: Rate limiting for API routes
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 500, // Limit each IP to 500 requests per windowMs (increased for development)
   message: { error: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -66,7 +66,7 @@ const apiLimiter = rateLimit({
 // Stricter rate limit for auth routes
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 login attempts per 15 minutes
+  max: 50, // Limit each IP to 50 login attempts per 15 minutes (increased from 5)
   message: { error: 'Too many login attempts, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -75,7 +75,7 @@ const authLimiter = rateLimit({
 // Lighter rate limit for time clock status checks (allows frequent polling)
 const timeClockLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200, // Allow 200 requests per 15 minutes for time clock polling
+  max: 1000, // Allow 1000 requests per 15 minutes for time clock polling
   message: { error: 'Too many requests, please slow down' },
   standardHeaders: true,
   legacyHeaders: false,

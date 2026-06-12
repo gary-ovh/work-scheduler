@@ -8,19 +8,21 @@ function TimeClockWidget() {
   const [status, setStatus] = useState('clocked_out')
   const [currentTime, setCurrentTime] = useState(new Date())
   const [teamStatus, setTeamStatus] = useState([])
+  const [lateEmployees, setLateEmployees] = useState([])
   const [timeClockData, setTimeClockData] = useState(null)
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchUserData()
-    // Update time every second, but only refresh status every 30 seconds
+    // Update time every second
     const timer = setInterval(() => setCurrentTime(new Date()), 1000)
+    // Refresh team status every 60 seconds (only if clocked in)
     const statusTimer = setInterval(() => {
       if (employee && status !== 'clocked_out') {
         refreshAll()
       }
-    }, 30000) // Refresh every 30 seconds only if clocked in
+    }, 60000) // Refresh every 60 seconds instead of 30
     return () => {
       clearInterval(timer)
       clearInterval(statusTimer)
@@ -66,9 +68,20 @@ function TimeClockWidget() {
       const res = await api.get(`/time-clock/status/team?team_id=${teamId}`)
       console.log('Team status:', res.data)
       setTeamStatus(res.data || [])
+      
+      // Filter to show only employees who are currently late
+      const now = new Date()
+      const late = (res.data || []).filter(member => {
+        if (!member.scheduled_start || !member.is_late) return false
+        const scheduledTime = new Date(member.scheduled_start)
+        // Show as late if scheduled start was in the past and they clocked in after scheduled time
+        return member.is_late && now > scheduledTime
+      })
+      setLateEmployees(late)
     } catch (error) {
       console.error('Failed to fetch team status:', error)
       setTeamStatus([])
+      setLateEmployees([])
     }
   }
 
@@ -243,8 +256,62 @@ function TimeClockWidget() {
       </div>
 
       {/* Team Status */}
-      <div className="card">
+      <div className="card" style={{ marginTop: '20px' }}>
         <h4 style={{ marginBottom: '15px' }}>Team Status</h4>
+
+        {/* Currently Late Section */}
+        {lateEmployees.length > 0 && (
+          <div style={{ 
+            marginBottom: '20px', 
+            padding: '15px', 
+            backgroundColor: '#ffe6e6', 
+            borderRadius: '8px',
+            border: '1px solid #dc3545'
+          }}>
+            <h5 style={{ margin: '0 0 10px 0', color: '#dc3545' }}>
+              ⚠️ Currently Late ({lateEmployees.length})
+            </h5>
+            <div style={{ overflowX: 'auto' }}>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Scheduled</th>
+                    <th>Clock In</th>
+                    <th>Late By</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lateEmployees.map((member) => (
+                    <tr key={member.employee_id}>
+                      <td>
+                        <span style={{
+                          display: 'inline-block',
+                          width: '10px',
+                          height: '10px',
+                          borderRadius: '50%',
+                          backgroundColor: member.team_color || '#007bff',
+                          marginRight: '8px'
+                        }}></span>
+                        {member.first_name} {member.last_name}
+                        {member.employee_id === employee?.id && ' (You)'}
+                      </td>
+                      <td style={{ color: '#dc3545' }}>
+                        {format(new Date(member.scheduled_start), 'h:mm a')}
+                      </td>
+                      <td>
+                        {format(new Date(member.clock_in), 'h:mm a')}
+                      </td>
+                      <td style={{ color: '#dc3545', fontWeight: 'bold' }}>
+                        +{member.minutes_late} min
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {teamStatus.length === 0 ? (
           <p style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
