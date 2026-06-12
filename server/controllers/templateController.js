@@ -143,13 +143,20 @@ const applyTemplate = async (req, res) => {
       shiftEnd.setDate(shiftEnd.getDate() + 1);
     }
 
-    // Store as local time string in ISO format without timezone conversion
-    const shiftStartStr = shiftStart.toISOString().replace('Z', '');
-    const shiftEndStr = shiftEnd.toISOString().replace('Z', '');
+    // Format as local time string for PostgreSQL (YYYY-MM-DD HH:MM:SS)
+    const formatLocal = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    };
 
     const result = await pool.query(
       'INSERT INTO shifts (employee_id, start_time, end_time, position, status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [employee_id, shiftStartStr, shiftEndStr, position || template.position, 'scheduled']
+      [employee_id, formatLocal(shiftStart), formatLocal(shiftEnd), position || template.position, 'scheduled']
     );
 
     res.status(201).json(result.rows[0]);
@@ -202,15 +209,22 @@ const applyTemplateToWeek = async (req, res) => {
         shiftEnd.setDate(shiftEnd.getDate() + 1);
       }
 
-      // Store as local time string in ISO format without timezone conversion
-      const shiftStartStr = shiftStart.toISOString().replace('Z', '');
-      const shiftEndStr = shiftEnd.toISOString().replace('Z', '');
+      // Format as local time string for PostgreSQL (YYYY-MM-DD HH:MM:SS)
+      const formatLocal = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+      };
 
       const position = positionsArray[i % positionsArray.length];
 
       const result = await pool.query(
         'INSERT INTO shifts (employee_id, start_time, end_time, position, status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-        [employee_id, shiftStartStr, shiftEndStr, position, 'scheduled']
+        [employee_id, formatLocal(shiftStart), formatLocal(shiftEnd), position, 'scheduled']
       );
 
       createdShifts.push(result.rows[0]);
