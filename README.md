@@ -10,13 +10,15 @@ A web application for scheduling work schedules with shift management and employ
 
 ## Features
 
+- **Time Clock**: Clock in/out, break tracking, team status visibility
 - Shift management (create, edit, delete shifts)
 - Shift templates for reusable shift configurations
-- Employee management
+- Employee management with team assignments
 - Time off requests with leave banks (Vacation, Sick, Flexible days)
 - Dashboard with overview statistics
 - Authentication with JWT
 - Role-based access control
+- Security hardening (rate limiting, input validation, helmet headers)
 
 ## Prerequisites
 
@@ -146,6 +148,26 @@ npm run dev
 - `POST /api/leave/requests` - Create time off request
 - `PUT /api/leave/requests/:id/review` - Review request (manager/admin only)
 - `DELETE /api/leave/requests/:id` - Delete request (manager/admin only)
+
+### Time Clock
+- `POST /api/time-clock/clock-in` - Clock in (with optional notes)
+- `POST /api/time-clock/clock-out` - Clock out
+- `POST /api/time-clock/break/start` - Start break
+- `POST /api/time-clock/break/end` - End break
+- `GET /api/time-clock/status/:employeeId` - Get current status
+- `GET /api/time-clock/status/team?team_id=X` - Get team status (who's clocked in)
+- `GET /api/time-clock/history/:employeeId` - Get time clock history
+
+## Database Migrations
+
+To add the time clock functionality to an existing database:
+
+```bash
+cd server
+npm run migrate-time-clock
+```
+
+This creates the `time_clock` table and necessary indexes.
 
 ## Default User Roles
 

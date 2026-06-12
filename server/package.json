@@ -8,7 +8,8 @@
     "dev": "nodemon server.js",
     "setup-db": "node setup-database.js",
     "add-users": "node add-sample-users.js",
-    "migrate": "node migrate-teams.js"
+    "migrate": "node migrate-teams.js",
+    "migrate-time-clock": "node migrate-time-clock.js"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
