@@ -24,6 +24,15 @@ function TimeClockHistory() {
     return new Date(year, month - 1, day, hour, minute, second || 0)
   }
 
+  const formatDuration = (totalMinutes) => {
+    if (!totalMinutes || totalMinutes <= 0) return '0 min'
+    const hours = Math.floor(totalMinutes / 60)
+    const mins = totalMinutes % 60
+    if (hours > 0 && mins > 0) return `${hours}h ${mins}m`
+    if (hours > 0) return `${hours}h`
+    return `${mins} min`
+  }
+
   useEffect(() => {
     fetchUserData()
     // Default to last 30 days
@@ -273,7 +282,7 @@ function TimeClockHistory() {
                     <td>
                       {record.is_late ? (
                         <span style={{ color: '#dc3545', fontWeight: 'bold' }}>
-                          +{record.minutes_late} min
+                          +{formatDuration(record.minutes_late)}
                         </span>
                       ) : record.scheduled_start ? (
                         <span style={{ color: '#28a745' }}>On time</span>
@@ -340,7 +349,7 @@ function TimeClockHistory() {
               <div>
                 <div style={{ fontSize: '12px', color: '#666' }}>Total Late Time</div>
                 <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#dc3545' }}>
-                  {timeRecords.reduce((sum, r) => sum + (r.minutes_late || 0), 0)} min
+                  {formatDuration(timeRecords.reduce((sum, r) => sum + (r.minutes_late || 0), 0))}
                 </div>
               </div>
             </div>

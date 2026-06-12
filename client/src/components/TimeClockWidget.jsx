@@ -22,6 +22,15 @@ function TimeClockWidget() {
     return new Date(year, month - 1, day, hour, minute, second || 0)
   }
 
+  const formatDuration = (totalMinutes) => {
+    if (!totalMinutes || totalMinutes <= 0) return '0 min'
+    const hours = Math.floor(totalMinutes / 60)
+    const mins = totalMinutes % 60
+    if (hours > 0 && mins > 0) return `${hours}h ${mins}m`
+    if (hours > 0) return `${hours}h`
+    return `${mins} min`
+  }
+
   useEffect(() => {
     fetchUserData()
     // Update time every second
@@ -317,9 +326,9 @@ function TimeClockWidget() {
                     <td>
                       {emp.scheduled_end ? format(parseLocalDate(emp.scheduled_end), 'h:mm a') : '-'}
                     </td>
-                    <td style={{ color: '#dc3545', fontWeight: 'bold' }}>
-                      +{emp.minutes_late} min
-                    </td>
+                      <td style={{ color: '#dc3545', fontWeight: 'bold' }}>
+                        +{formatDuration(emp.minutes_late)}
+                      </td>
                   </tr>
                 ))}
               </tbody>
@@ -374,12 +383,12 @@ function TimeClockWidget() {
                     <td>{format(parseLocalDate(member.clock_in), 'h:mm a')}</td>
                     <td>{member.break_duration ? `${member.break_duration} min` : '-'}</td>
                     <td>
-                      {member.scheduled_start ? format(new Date(member.scheduled_start), 'h:mm a') : '-'}
+                      {member.scheduled_start ? format(parseLocalDate(member.scheduled_start), 'h:mm a') : '-'}
                     </td>
                     <td>
                       {member.is_late ? (
                         <span style={{ color: '#dc3545', fontWeight: 'bold' }}>
-                          {member.minutes_late} min
+                          +{formatDuration(member.minutes_late)}
                         </span>
                       ) : (
                         <span style={{ color: '#28a745' }}>On time</span>

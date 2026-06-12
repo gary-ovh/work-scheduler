@@ -19,6 +19,15 @@ function TimeClock() {
     return new Date(year, month - 1, day, hour, minute, second || 0)
   }
 
+  const formatDuration = (totalMinutes) => {
+    if (!totalMinutes || totalMinutes <= 0) return '0 min'
+    const hours = Math.floor(totalMinutes / 60)
+    const mins = totalMinutes % 60
+    if (hours > 0 && mins > 0) return `${hours}h ${mins}m`
+    if (hours > 0) return `${hours}h`
+    return `${mins} min`
+  }
+
   useEffect(() => {
     fetchUserData()
     const timer = setInterval(() => setCurrentTime(new Date()), 1000)
@@ -267,7 +276,7 @@ function TimeClock() {
                   <td>
                     {member.is_late ? (
                       <span style={{ color: '#dc3545', fontWeight: 'bold' }}>
-                        {member.minutes_late} min late
+                        +{formatDuration(member.minutes_late)} late
                       </span>
                     ) : (
                       <span style={{ color: '#28a745' }}>On time</span>
