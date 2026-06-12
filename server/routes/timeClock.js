@@ -18,6 +18,9 @@ router.use(authenticateToken);
 // Team status endpoint - MUST be before /status/:employeeId to avoid matching "team" as employeeId
 router.get('/status/team', timeClockController.getTeamStatus);
 
+// Get employees who are late but not clocked in
+router.get('/late', timeClockController.getLateEmployees);
+
 // Status endpoints
 router.get('/status/:employeeId?', [
   param('employeeId').optional().isInt().withMessage('Valid employee ID is required'),

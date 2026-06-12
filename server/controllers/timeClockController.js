@@ -297,7 +297,7 @@ const getTeamStatus = async (req, res) => {
          LIMIT 1
        ) s ON true
        WHERE tc.clock_out IS NULL
-       ${team_id ? 'AND e.team_id = $1' : ''}
+         ${team_id ? 'AND e.team_id = $1' : ''}
        ORDER BY tc.employee_id, tc.clock_in DESC`,
       team_id ? [team_id] : []
     );
@@ -329,6 +329,69 @@ const getTeamStatus = async (req, res) => {
   } catch (error) {
     console.error('Get team status error:', error);
     res.status(500).json({ error: 'Failed to get team status' });
+  }
+};
+
+const getLateEmployees = async (req, res) => {
+  try {
+    const { team_id } = req.query;
+    const now = new Date();
+    const currentTimeStr = now.toISOString().replace('Z', '');
+    
+    // Find employees who have a shift that started but are NOT clocked in
+    const result = await pool.query(
+      `SELECT DISTINCT ON (e.id)
+         e.id as employee_id,
+         e.first_name,
+         e.last_name,
+         e.team_id,
+         t.name as team_name,
+         t.color as team_color,
+         s.start_time as scheduled_start,
+         s.end_time as scheduled_end,
+         tc.status as current_status,
+         tc.clock_in
+       FROM employees e
+       JOIN shifts s ON e.id = s.employee_id
+       LEFT JOIN teams t ON e.team_id = t.id
+       LEFT JOIN LATERAL (
+         SELECT employee_id, status, clock_in 
+         FROM time_clock 
+         WHERE employee_id = e.id 
+         AND clock_out IS NULL
+         ORDER BY clock_in DESC 
+         LIMIT 1
+       ) tc ON true
+       WHERE DATE(s.start_time) = CURRENT_DATE
+         AND s.start_time <= $1
+         AND (tc.status IS NULL OR tc.status = 'clocked_out')
+         ${team_id ? 'AND e.team_id = $2' : ''}
+       ORDER BY e.id, s.start_time ASC`,
+      team_id ? [currentTimeStr, team_id] : [currentTimeStr]
+    );
+
+    // Calculate how late each employee is
+    const lateEmployees = result.rows.map(emp => {
+      const scheduledStart = emp.scheduled_start ? new Date(emp.scheduled_start) : null;
+      const minutesLate = scheduledStart ? Math.round((now - scheduledStart) / (1000 * 60)) : 0;
+      
+      return {
+        employee_id: emp.employee_id,
+        first_name: emp.first_name,
+        last_name: emp.last_name,
+        team_name: emp.team_name,
+        team_color: emp.team_color,
+        scheduled_start: emp.scheduled_start,
+        scheduled_end: emp.scheduled_end,
+        minutes_late: minutesLate,
+        status: 'not_clocked_in'
+      };
+    }).filter(emp => emp.minutes_late > 0); // Only show if actually late
+
+    res.json(lateEmployees);
+  } catch (error) {
+    console.error('Get late employees error:', error);
+    res.status(500).json({ error: 'Failed to get late employees' });
   }
 };
 

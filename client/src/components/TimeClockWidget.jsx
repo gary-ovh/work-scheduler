@@ -63,21 +63,25 @@ function TimeClockWidget() {
     }
   }
 
+  const fetchLateEmployees = async (teamId) => {
+    try {
+      const res = await api.get(`/time-clock/late?team_id=${teamId}`)
+      console.log('Late employees:', res.data)
+      setLateEmployees(res.data || [])
+    } catch (error) {
+      console.error('Failed to fetch late employees:', error)
+      setLateEmployees([])
+    }
+  }
+
   const fetchTeamStatus = async (teamId) => {
     try {
       const res = await api.get(`/time-clock/status/team?team_id=${teamId}`)
       console.log('Team status:', res.data)
       setTeamStatus(res.data || [])
       
-      // Filter to show only employees who are currently late
-      const now = new Date()
-      const late = (res.data || []).filter(member => {
-        if (!member.scheduled_start || !member.is_late) return false
-        const scheduledTime = new Date(member.scheduled_start)
-        // Show as late if scheduled start was in the past and they clocked in after scheduled time
-        return member.is_late && now > scheduledTime
-      })
-      setLateEmployees(late)
+      // Also fetch employees who are late but not clocked in
+      await fetchLateEmployees(teamId)
     } catch (error) {
       console.error('Failed to fetch team status:', error)
       setTeamStatus([])
@@ -259,59 +263,61 @@ function TimeClockWidget() {
       <div className="card" style={{ marginTop: '20px' }}>
         <h4 style={{ marginBottom: '15px' }}>Team Status</h4>
 
-        {/* Currently Late Section */}
-        {lateEmployees.length > 0 && (
-          <div style={{ 
-            marginBottom: '20px', 
-            padding: '15px', 
-            backgroundColor: '#ffe6e6', 
-            borderRadius: '8px',
-            border: '1px solid #dc3545'
-          }}>
-            <h5 style={{ margin: '0 0 10px 0', color: '#dc3545' }}>
-              ⚠️ Currently Late ({lateEmployees.length})
-            </h5>
-            <div style={{ overflowX: 'auto' }}>
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Employee</th>
-                    <th>Scheduled</th>
-                    <th>Clock In</th>
-                    <th>Late By</th>
+      {/* Currently Late Section */}
+      {lateEmployees.length > 0 && (
+        <div style={{ 
+          marginBottom: '20px', 
+          padding: '15px', 
+          backgroundColor: '#ffe6e6', 
+          borderRadius: '8px',
+          border: '1px solid #dc3545'
+        }}>
+          <h5 style={{ margin: '0 0 10px 0', color: '#dc3545' }}>
+            ⚠️ Currently Late for Shift ({lateEmployees.length})
+          </h5>
+          <p style={{ fontSize: '13px', color: '#666', marginBottom: '10px' }}>
+            Employees who have not clocked in but their shift has started
+          </p>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Scheduled Start</th>
+                  <th>Scheduled End</th>
+                  <th>Late By</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lateEmployees.map((emp) => (
+                  <tr key={emp.employee_id}>
+                    <td>
+                      <span style={{
+                        display: 'inline-block',
+                        width: '10px',
+                        height: '10px',
+                        borderRadius: '50%',
+                        backgroundColor: emp.team_color || '#dc3545',
+                        marginRight: '8px'
+                      }}></span>
+                      {emp.first_name} {emp.last_name}
+                    </td>
+                    <td style={{ color: '#dc3545', fontWeight: 'bold' }}>
+                      {emp.scheduled_start ? format(new Date(emp.scheduled_start), 'h:mm a') : '-'}
+                    </td>
+                    <td>
+                      {emp.scheduled_end ? format(new Date(emp.scheduled_end), 'h:mm a') : '-'}
+                    </td>
+                    <td style={{ color: '#dc3545', fontWeight: 'bold' }}>
+                      +{emp.minutes_late} min
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {lateEmployees.map((member) => (
-                    <tr key={member.employee_id}>
-                      <td>
-                        <span style={{
-                          display: 'inline-block',
-                          width: '10px',
-                          height: '10px',
-                          borderRadius: '50%',
-                          backgroundColor: member.team_color || '#007bff',
-                          marginRight: '8px'
-                        }}></span>
-                        {member.first_name} {member.last_name}
-                        {member.employee_id === employee?.id && ' (You)'}
-                      </td>
-                      <td style={{ color: '#dc3545' }}>
-                        {format(new Date(member.scheduled_start), 'h:mm a')}
-                      </td>
-                      <td>
-                        {format(new Date(member.clock_in), 'h:mm a')}
-                      </td>
-                      <td style={{ color: '#dc3545', fontWeight: 'bold' }}>
-                        +{member.minutes_late} min
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
+        </div>
+      )}
 
         {teamStatus.length === 0 ? (
           <p style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
