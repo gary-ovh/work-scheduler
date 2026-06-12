@@ -40,7 +40,11 @@ const getTemplateById = async (req, res) => {
 
 const createTemplate = async (req, res) => {
   try {
-    const { name, start_time, end_time, position, color, created_by } = req.body;
+    let { name, start_time, end_time, position, color, created_by } = req.body;
+
+    // Ensure times are in HH:MM:SS format
+    if (start_time && start_time.length === 5) start_time += ':00';
+    if (end_time && end_time.length === 5) end_time += ':00';
 
     if (new Date(`2000-01-01 ${start_time}`) >= new Date(`2000-01-01 ${end_time}`)) {
       return res.status(400).json({ error: 'End time must be after start time' });

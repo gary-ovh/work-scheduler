@@ -26,8 +26,8 @@ router.get('/:id', [
 router.post('/', [
   authorizeRole('manager', 'admin'),
   body('name').trim().notEmpty().withMessage('Template name is required'),
-  body('start_time').matches(/^\d{2}:\d{2}:\d{2}$/).withMessage('Start time must be in HH:MM:SS format'),
-  body('end_time').matches(/^\d{2}:\d{2}:\d{2}$/).withMessage('End time must be in HH:MM:SS format'),
+  body('start_time').matches(/^\d{2}:\d{2}(:\d{2})?$/).withMessage('Start time must be in HH:MM or HH:MM:SS format'),
+  body('end_time').matches(/^\d{2}:\d{2}(:\d{2})?$/).withMessage('End time must be in HH:MM or HH:MM:SS format'),
   body('position').optional().trim(),
   body('color').optional().isHexColor().withMessage('Color must be a valid hex color'),
   validate
@@ -36,8 +36,8 @@ router.put('/:id', [
   authorizeRole('manager', 'admin'),
   param('id').isInt().withMessage('Valid template ID is required'),
   body('name').optional().trim().notEmpty().withMessage('Template name cannot be empty'),
-  body('start_time').optional().matches(/^\d{2}:\d{2}:\d{2}$/).withMessage('Start time must be in HH:MM:SS format'),
-  body('end_time').optional().matches(/^\d{2}:\d{2}:\d{2}$/).withMessage('End time must be in HH:MM:SS format'),
+  body('start_time').optional().matches(/^\d{2}:\d{2}(:\d{2})?$/).withMessage('Start time must be in HH:MM or HH:MM:SS format'),
+  body('end_time').optional().matches(/^\d{2}:\d{2}(:\d{2})?$/).withMessage('End time must be in HH:MM or HH:MM:SS format'),
   body('color').optional().isHexColor().withMessage('Color must be a valid hex color'),
   validate
 ], templateController.updateTemplate);
