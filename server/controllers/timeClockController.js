@@ -465,5 +465,6 @@ module.exports = {
   endBreak,
   getCurrentStatus,
   getTeamStatus,
+  getLateEmployees,
   getTimeHistory
 };
