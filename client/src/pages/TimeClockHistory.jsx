@@ -241,6 +241,8 @@ function TimeClockHistory() {
                 <tr>
                   <th>Date</th>
                   <th>Clock In</th>
+                  <th>Scheduled</th>
+                  <th>Late</th>
                   <th>Clock Out</th>
                   <th>Break Time</th>
                   <th>Total Hours</th>
@@ -256,6 +258,20 @@ function TimeClockHistory() {
                     </td>
                     <td>
                       {record.clock_in ? format(new Date(record.clock_in), 'h:mm a') : '-'}
+                    </td>
+                    <td>
+                      {record.scheduled_start ? format(new Date(record.scheduled_start), 'h:mm a') : '-'}
+                    </td>
+                    <td>
+                      {record.is_late ? (
+                        <span style={{ color: '#dc3545', fontWeight: 'bold' }}>
+                          +{record.minutes_late} min
+                        </span>
+                      ) : record.scheduled_start ? (
+                        <span style={{ color: '#28a745' }}>On time</span>
+                      ) : (
+                        <span style={{ color: '#666' }}>No shift</span>
+                      )}
                     </td>
                     <td>
                       {record.clock_out ? format(new Date(record.clock_out), 'h:mm a') : '-'}
@@ -305,6 +321,18 @@ function TimeClockHistory() {
                 <div style={{ fontSize: '12px', color: '#666' }}>Total Break Time</div>
                 <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ffc107' }}>
                   {timeRecords.reduce((sum, r) => sum + (r.break_duration || 0), 0)} min
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '12px', color: '#666' }}>Late Arrivals</div>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#dc3545' }}>
+                  {timeRecords.filter(r => r.is_late).length}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '12px', color: '#666' }}>Total Late Time</div>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#dc3545' }}>
+                  {timeRecords.reduce((sum, r) => sum + (r.minutes_late || 0), 0)} min
                 </div>
               </div>
             </div>

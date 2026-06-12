@@ -338,9 +338,18 @@ const getTimeHistory = async (req, res) => {
     const { startDate, endDate } = req.query;
 
     let query = `
-      SELECT tc.*, e.first_name, e.last_name
+      SELECT tc.*, e.first_name, e.last_name,
+             s.start_time as scheduled_start,
+             s.end_time as scheduled_end
       FROM time_clock tc
       JOIN employees e ON tc.employee_id = e.id
+      LEFT JOIN LATERAL (
+        SELECT start_time, end_time FROM shifts 
+        WHERE employee_id = tc.employee_id 
+        AND DATE(start_time) = DATE(tc.clock_in)
+        ORDER BY start_time ASC 
+        LIMIT 1
+      ) s ON true
       WHERE tc.employee_id = $1
     `;
     
@@ -361,11 +370,25 @@ const getTimeHistory = async (req, res) => {
       query += ' AND ' + conditions.join(' AND ');
     }
 
-    query += ' ORDER BY tc.clock_in DESC LIMIT 30';
+    query += ' ORDER BY tc.clock_in DESC LIMIT 100';
 
     const result = await pool.query(query, values);
 
-    res.json(result.rows);
+    // Add late calculation
+    const records = result.rows.map(record => {
+      const scheduledStart = record.scheduled_start ? new Date(record.scheduled_start) : null;
+      const clockInTime = new Date(record.clock_in);
+      const isLate = scheduledStart && clockInTime > scheduledStart;
+      const minutesLate = isLate ? Math.round((clockInTime - scheduledStart) / (1000 * 60)) : 0;
+
+      return {
+        ...record,
+        is_late: isLate,
+        minutes_late: minutesLate
+      };
+    });
+
+    res.json(records);
   } catch (error) {
     console.error('Get time history error:', error);
     res.status(500).json({ error: 'Failed to get time history' });
