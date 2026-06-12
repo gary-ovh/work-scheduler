@@ -11,6 +11,14 @@ function TimeClock() {
   const [timeClockData, setTimeClockData] = useState(null)
   const [notes, setNotes] = useState('')
 
+  const parseLocalDate = (timestampStr) => {
+    if (!timestampStr) return null
+    const [datePart, timePart] = timestampStr.split(' ')
+    const [year, month, day] = datePart.split('-').map(Number)
+    const [hour, minute, second] = timePart.split(':').map(Number)
+    return new Date(year, month - 1, day, hour, minute, second || 0)
+  }
+
   useEffect(() => {
     fetchUserData()
     const timer = setInterval(() => setCurrentTime(new Date()), 1000)
@@ -251,10 +259,10 @@ function TimeClock() {
                       {member.status === 'clocked_in' ? '🟢 In' : member.status === 'on_break' ? '☕ Break' : '🔴 Out'}
                     </span>
                   </td>
-                  <td>{format(new Date(member.clock_in), 'h:mm a')}</td>
+                  <td>{format(parseLocalDate(member.clock_in), 'h:mm a')}</td>
                   <td>{member.break_duration ? `${member.break_duration} min` : '-'}</td>
                   <td>
-                    {member.scheduled_start ? format(new Date(member.scheduled_start), 'h:mm a') : '-'}
+                    {member.scheduled_start ? format(parseLocalDate(member.scheduled_start), 'h:mm a') : '-'}
                   </td>
                   <td>
                     {member.is_late ? (

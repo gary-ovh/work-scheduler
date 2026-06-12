@@ -279,35 +279,46 @@ const getTeamStatus = async (req, res) => {
     // Get all employees who are currently clocked in or on break
     const result = await pool.query(
       `SELECT DISTINCT ON (tc.employee_id) 
-         tc.*, 
-         e.first_name, 
-         e.last_name, 
-         e.team_id,
-         t.name as team_name,
-         t.color as team_color,
-         s.start_time as scheduled_start
-       FROM time_clock tc
-       JOIN employees e ON tc.employee_id = e.id
-       LEFT JOIN teams t ON e.team_id = t.id
-       LEFT JOIN LATERAL (
-         SELECT start_time FROM shifts 
-         WHERE employee_id = e.id 
-         AND DATE(start_time) = CURRENT_DATE 
-         ORDER BY start_time ASC 
-         LIMIT 1
-       ) s ON true
-       WHERE tc.clock_out IS NULL
-         ${team_id ? 'AND e.team_id = $1' : ''}
-       ORDER BY tc.employee_id, tc.clock_in DESC`,
+          tc.employee_id,
+          tc.status,
+          tc.break_duration,
+          TO_CHAR(tc.clock_in, 'YYYY-MM-DD HH24:MI:SS') as clock_in,
+          e.first_name, 
+          e.last_name, 
+          e.team_id,
+          t.name as team_name,
+          t.color as team_color,
+          TO_CHAR(s.start_time, 'YYYY-MM-DD HH24:MI:SS') as scheduled_start
+        FROM time_clock tc
+        JOIN employees e ON tc.employee_id = e.id
+        LEFT JOIN teams t ON e.team_id = t.id
+        LEFT JOIN LATERAL (
+          SELECT start_time FROM shifts 
+          WHERE employee_id = e.id 
+          AND DATE(start_time) = CURRENT_DATE 
+          ORDER BY start_time ASC 
+          LIMIT 1
+        ) s ON true
+        WHERE tc.clock_out IS NULL
+          ${team_id ? 'AND e.team_id = $1' : ''}
+        ORDER BY tc.employee_id, tc.clock_in DESC`,
       team_id ? [team_id] : []
     );
 
-    // Determine late status
+    // Determine late status - parse timestamps as local server time
+    const parseTime = (ts) => {
+      if (!ts) return null;
+      const [datePart, timePart] = ts.split(' ');
+      const [y, m, d] = datePart.split('-').map(Number);
+      const [h, min, s] = timePart.split(':').map(Number);
+      return new Date(y, m - 1, d, h, min, s);
+    };
+
     const now = new Date();
     const teamStatus = result.rows.map(person => {
-      const scheduledStart = person.scheduled_start ? new Date(person.scheduled_start) : null;
-      const clockInTime = new Date(person.clock_in);
-      const isLate = scheduledStart && clockInTime > scheduledStart;
+      const scheduledStart = parseTime(person.scheduled_start);
+      const clockInTime = parseTime(person.clock_in);
+      const isLate = scheduledStart && clockInTime && clockInTime > scheduledStart;
       const minutesLate = isLate ? Math.round((clockInTime - scheduledStart) / (1000 * 60)) : 0;
 
       return {
@@ -341,38 +352,45 @@ const getLateEmployees = async (req, res) => {
     // Find employees who have a shift that started but are NOT clocked in
     const result = await pool.query(
       `SELECT DISTINCT ON (e.id)
-         e.id as employee_id,
-         e.first_name,
-         e.last_name,
-         e.team_id,
-         t.name as team_name,
-         t.color as team_color,
-         s.start_time as scheduled_start,
-         s.end_time as scheduled_end,
-         tc.status as current_status,
-         tc.clock_in
-       FROM employees e
-       JOIN shifts s ON e.id = s.employee_id
-       LEFT JOIN teams t ON e.team_id = t.id
-       LEFT JOIN LATERAL (
-         SELECT employee_id, status, clock_in 
-         FROM time_clock 
-         WHERE employee_id = e.id 
-         AND clock_out IS NULL
-         ORDER BY clock_in DESC 
-         LIMIT 1
-       ) tc ON true
-       WHERE DATE(s.start_time) = CURRENT_DATE
-         AND s.start_time <= $1
-         AND (tc.status IS NULL OR tc.status = 'clocked_out')
-         ${team_id ? 'AND e.team_id = $2' : ''}
-       ORDER BY e.id, s.start_time ASC`,
+          e.id as employee_id,
+          e.first_name,
+          e.last_name,
+          e.team_id,
+          t.name as team_name,
+          t.color as team_color,
+          TO_CHAR(s.start_time, 'YYYY-MM-DD HH24:MI:SS') as scheduled_start,
+          TO_CHAR(s.end_time, 'YYYY-MM-DD HH24:MI:SS') as scheduled_end,
+          tc.status as current_status
+        FROM employees e
+        JOIN shifts s ON e.id = s.employee_id
+        LEFT JOIN teams t ON e.team_id = t.id
+        LEFT JOIN LATERAL (
+          SELECT employee_id, status, clock_in 
+          FROM time_clock 
+          WHERE employee_id = e.id 
+          AND clock_out IS NULL
+          ORDER BY clock_in DESC 
+          LIMIT 1
+        ) tc ON true
+        WHERE DATE(s.start_time) = CURRENT_DATE
+          AND s.start_time <= $1
+          AND (tc.status IS NULL OR tc.status = 'clocked_out')
+          ${team_id ? 'AND e.team_id = $2' : ''}
+        ORDER BY e.id, s.start_time ASC`,
       team_id ? [currentTimeStr, team_id] : [currentTimeStr]
     );
 
+    const parseTime = (ts) => {
+      if (!ts) return null;
+      const [datePart, timePart] = ts.split(' ');
+      const [y, m, d] = datePart.split('-').map(Number);
+      const [h, min, s] = timePart.split(':').map(Number);
+      return new Date(y, m - 1, d, h, min, s);
+    };
+
     // Calculate how late each employee is
     const lateEmployees = result.rows.map(emp => {
-      const scheduledStart = emp.scheduled_start ? new Date(emp.scheduled_start) : null;
+      const scheduledStart = parseTime(emp.scheduled_start);
       const minutesLate = scheduledStart ? Math.round((now - scheduledStart) / (1000 * 60)) : 0;
       
       return {
@@ -401,9 +419,15 @@ const getTimeHistory = async (req, res) => {
     const { startDate, endDate } = req.query;
 
     let query = `
-      SELECT tc.*, e.first_name, e.last_name,
-             s.start_time as scheduled_start,
-             s.end_time as scheduled_end
+      SELECT tc.employee_id, tc.status, tc.break_duration, tc.total_hours, tc.break_duration as break_duration_val,
+        TO_CHAR(tc.clock_in, 'YYYY-MM-DD HH24:MI:SS') as clock_in,
+        TO_CHAR(tc.clock_out, 'YYYY-MM-DD HH24:MI:SS') as clock_out,
+        TO_CHAR(tc.break_start, 'YYYY-MM-DD HH24:MI:SS') as break_start,
+        TO_CHAR(tc.break_end, 'YYYY-MM-DD HH24:MI:SS') as break_end,
+        tc.notes,
+        e.first_name, e.last_name,
+        TO_CHAR(s.start_time, 'YYYY-MM-DD HH24:MI:SS') as scheduled_start,
+        TO_CHAR(s.end_time, 'YYYY-MM-DD HH24:MI:SS') as scheduled_end
       FROM time_clock tc
       JOIN employees e ON tc.employee_id = e.id
       LEFT JOIN LATERAL (
@@ -437,11 +461,19 @@ const getTimeHistory = async (req, res) => {
 
     const result = await pool.query(query, values);
 
-    // Add late calculation
+    // Add late calculation - parse timestamps as local server time
+    const parseTime = (ts) => {
+      if (!ts) return null;
+      const [datePart, timePart] = ts.split(' ');
+      const [y, m, d] = datePart.split('-').map(Number);
+      const [h, min, s] = timePart.split(':').map(Number);
+      return new Date(y, m - 1, d, h, min, s);
+    };
+
     const records = result.rows.map(record => {
-      const scheduledStart = record.scheduled_start ? new Date(record.scheduled_start) : null;
-      const clockInTime = new Date(record.clock_in);
-      const isLate = scheduledStart && clockInTime > scheduledStart;
+      const scheduledStart = parseTime(record.scheduled_start);
+      const clockInTime = parseTime(record.clock_in);
+      const isLate = scheduledStart && clockInTime && clockInTime > scheduledStart;
       const minutesLate = isLate ? Math.round((clockInTime - scheduledStart) / (1000 * 60)) : 0;
 
       return {

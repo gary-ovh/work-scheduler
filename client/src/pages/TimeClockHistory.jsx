@@ -16,6 +16,14 @@ function TimeClockHistory() {
     notes: ''
   })
 
+  const parseLocalDate = (timestampStr) => {
+    if (!timestampStr) return null
+    const [datePart, timePart] = timestampStr.split(' ')
+    const [year, month, day] = datePart.split('-').map(Number)
+    const [hour, minute, second] = timePart.split(':').map(Number)
+    return new Date(year, month - 1, day, hour, minute, second || 0)
+  }
+
   useEffect(() => {
     fetchUserData()
     // Default to last 30 days
@@ -66,8 +74,8 @@ function TimeClockHistory() {
   const calculateDuration = (record) => {
     if (!record.clock_out || !record.clock_in) return 'N/A'
     
-    const clockIn = new Date(record.clock_in)
-    const clockOut = new Date(record.clock_out)
+    const clockIn = parseLocalDate(record.clock_in)
+    const clockOut = parseLocalDate(record.clock_out)
     const breakMinutes = record.break_duration || 0
     
     const totalMinutes = (clockOut - clockIn) / (1000 * 60) - breakMinutes
@@ -254,13 +262,13 @@ function TimeClockHistory() {
                 {timeRecords.map((record) => (
                   <tr key={record.id}>
                     <td>
-                      {record.clock_in ? format(new Date(record.clock_in), 'MMM dd, yyyy') : '-'}
+                      {record.clock_in ? format(parseLocalDate(record.clock_in), 'MMM dd, yyyy') : '-'}
                     </td>
                     <td>
-                      {record.clock_in ? format(new Date(record.clock_in), 'h:mm a') : '-'}
+                      {record.clock_in ? format(parseLocalDate(record.clock_in), 'h:mm a') : '-'}
                     </td>
                     <td>
-                      {record.scheduled_start ? format(new Date(record.scheduled_start), 'h:mm a') : '-'}
+                      {record.scheduled_start ? format(parseLocalDate(record.scheduled_start), 'h:mm a') : '-'}
                     </td>
                     <td>
                       {record.is_late ? (
@@ -274,7 +282,7 @@ function TimeClockHistory() {
                       )}
                     </td>
                     <td>
-                      {record.clock_out ? format(new Date(record.clock_out), 'h:mm a') : '-'}
+                      {record.clock_out ? format(parseLocalDate(record.clock_out), 'h:mm a') : '-'}
                     </td>
                     <td>
                       {record.break_duration ? `${record.break_duration} min` : '-'}
