@@ -328,6 +328,8 @@ const getTeamStatus = async (req, res) => {
 const getLateEmployees = async (req, res) => {
   try {
     const { team_id } = req.query;
+    
+    console.log('getLateEmployees called - CURRENT_DATE (UTC):', new Date().toISOString());
 
     // Find employees who have a shift that started but are NOT clocked in
     const result = await pool.query(
@@ -340,6 +342,7 @@ const getLateEmployees = async (req, res) => {
           t.color as team_color,
           TO_CHAR(s.start_time, 'YYYY-MM-DD HH24:MI:SS') as scheduled_start,
           TO_CHAR(s.end_time, 'YYYY-MM-DD HH24:MI:SS') as scheduled_end,
+          s.start_time as raw_start_time,
           tc.status as current_status
         FROM employees e
         JOIN shifts s ON e.id = s.employee_id
@@ -359,6 +362,18 @@ const getLateEmployees = async (req, res) => {
         ORDER BY e.id, s.start_time ASC`,
       team_id ? [team_id] : []
     );
+    
+    console.log('Late employees query result:', {
+      rowCount: result.rows.length,
+      rows: result.rows.map(r => ({
+        id: r.employee_id,
+        name: `${r.first_name} ${r.last_name}`,
+        scheduled_start: r.scheduled_start,
+        raw_start_time: r.raw_start_time,
+        status: r.current_status
+      })),
+      team_id
+    });
 
     // Return raw data - frontend calculates late status using local time
     const lateEmployees = result.rows.map(emp => ({
@@ -371,6 +386,8 @@ const getLateEmployees = async (req, res) => {
       scheduled_end: emp.scheduled_end,
       status: 'not_clocked_in'
     }));
+    
+    console.log('Returning late employees:', lateEmployees.length);
 
     res.json(lateEmployees);
   } catch (error) {
