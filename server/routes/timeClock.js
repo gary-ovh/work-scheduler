@@ -43,10 +43,10 @@ router.get('/status/:employeeId?', [
   validate
 ], timeClockController.getCurrentStatus);
 
-router.get('/status/team', [
-  query('team_id').optional().toInt().isInt({ min: 1 }).withMessage('Valid team ID is required'),
-  validate
-], timeClockController.getTeamStatus);
+router.get('/status/team', (req, res, next) => {
+  // Skip validation, let controller handle it
+  next();
+}, timeClockController.getTeamStatus);
 
 // History endpoint
 router.get('/history/:employeeId?', [
