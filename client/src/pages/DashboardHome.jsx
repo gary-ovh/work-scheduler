@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../api'
 import { format } from 'date-fns'
+import TimeClockWidget from '../components/TimeClockWidget'
 
 function DashboardHome() {
   const [user, setUser] = useState(null)
@@ -88,9 +89,14 @@ function DashboardHome() {
     <div>
       <h2 className="mb-2">Dashboard Overview</h2>
 
+      {/* Time Clock Widget */}
+      <div style={{ marginBottom: '30px' }}>
+        <TimeClockWidget />
+      </div>
+
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: 'repeat(4, 1fr)', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr)), 
         gap: '20px',
         marginBottom: '20px'
       }}>
