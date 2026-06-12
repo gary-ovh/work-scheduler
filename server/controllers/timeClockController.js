@@ -328,9 +328,7 @@ const getTeamStatus = async (req, res) => {
 const getLateEmployees = async (req, res) => {
   try {
     const { team_id } = req.query;
-    const now = new Date();
-    const currentTimeStr = now.toISOString().replace('Z', '');
-    
+
     // Find employees who have a shift that started but are NOT clocked in
     const result = await pool.query(
       `SELECT DISTINCT ON (e.id)
@@ -347,19 +345,19 @@ const getLateEmployees = async (req, res) => {
         JOIN shifts s ON e.id = s.employee_id
         LEFT JOIN teams t ON e.team_id = t.id
         LEFT JOIN LATERAL (
-          SELECT employee_id, status, clock_in 
-          FROM time_clock 
-          WHERE employee_id = e.id 
+          SELECT employee_id, status, clock_in
+          FROM time_clock
+          WHERE employee_id = e.id
           AND clock_out IS NULL
-          ORDER BY clock_in DESC 
+          ORDER BY clock_in DESC
           LIMIT 1
         ) tc ON true
         WHERE DATE(s.start_time) = CURRENT_DATE
-          AND s.start_time <= $1
+          AND s.start_time <= NOW()
           AND (tc.status IS NULL OR tc.status = 'clocked_out')
-          ${team_id ? 'AND e.team_id = $2' : ''}
+          ${team_id ? 'AND e.team_id = $1' : ''}
         ORDER BY e.id, s.start_time ASC`,
-      team_id ? [currentTimeStr, team_id] : [currentTimeStr]
+      team_id ? [team_id] : []
     );
 
     // Return raw data - frontend calculates late status using local time
