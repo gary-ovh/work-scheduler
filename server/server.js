@@ -77,9 +77,10 @@ const timeClockLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Apply rate limiters BEFORE routes
+app.use('/api/time-clock', timeClockLimiter); // Must be before generic /api limiter
 app.use('/api', apiLimiter);
 app.use('/api/auth', authLimiter);
-app.use('/api/time-clock', timeClockLimiter);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

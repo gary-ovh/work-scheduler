@@ -44,6 +44,7 @@ router.get('/status/:employeeId?', [
 ], timeClockController.getCurrentStatus);
 
 router.get('/status/team', (req, res, next) => {
+  console.log('Team status request:', req.query)
   // Skip validation, let controller handle it
   next();
 }, timeClockController.getTeamStatus);
