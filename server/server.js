@@ -68,8 +68,18 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Lighter rate limit for time clock status checks (allows frequent polling)
+const timeClockLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 200, // Allow 200 requests per 15 minutes for time clock polling
+  message: { error: 'Too many requests, please slow down' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.use('/api', apiLimiter);
 app.use('/api/auth', authLimiter);
+app.use('/api/time-clock', timeClockLimiter);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

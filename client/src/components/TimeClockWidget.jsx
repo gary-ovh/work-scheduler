@@ -14,8 +14,17 @@ function TimeClockWidget() {
 
   useEffect(() => {
     fetchUserData()
+    // Update time every second, but only refresh status every 30 seconds
     const timer = setInterval(() => setCurrentTime(new Date()), 1000)
-    return () => clearInterval(timer)
+    const statusTimer = setInterval(() => {
+      if (employee && status !== 'clocked_out') {
+        refreshAll()
+      }
+    }, 30000) // Refresh every 30 seconds only if clocked in
+    return () => {
+      clearInterval(timer)
+      clearInterval(statusTimer)
+    }
   }, [])
 
   const fetchUserData = async () => {

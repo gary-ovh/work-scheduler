@@ -44,7 +44,7 @@ router.get('/status/:employeeId?', [
 ], timeClockController.getCurrentStatus);
 
 router.get('/status/team', [
-  query('team_id').optional().isInt().withMessage('Valid team ID is required'),
+  query('team_id').optional().toInt().isInt({ min: 1 }).withMessage('Valid team ID is required'),
   validate
 ], timeClockController.getTeamStatus);
 
