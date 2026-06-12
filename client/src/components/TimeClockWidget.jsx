@@ -60,6 +60,7 @@ function TimeClockWidget() {
       if (currentEmployee) {
         await fetchStatus(currentEmployee.id)
         await fetchTeamStatus(currentEmployee.team_id)
+        fetchLateEmployees(currentEmployee.team_id)
       }
       setLoading(false)
     } catch (error) {
@@ -83,7 +84,8 @@ function TimeClockWidget() {
 
   const fetchLateEmployees = async (teamId) => {
     try {
-      const res = await api.get(`/time-clock/late?team_id=${teamId}`)
+      const url = teamId ? `/time-clock/late?team_id=${teamId}` : '/time-clock/late'
+      const res = await api.get(url)
       const now = new Date()
       // Calculate late status using local browser time
       const lateData = (res.data || []).map(emp => {
@@ -100,7 +102,8 @@ function TimeClockWidget() {
 
   const fetchTeamStatus = async (teamId) => {
     try {
-      const res = await api.get(`/time-clock/team-status?team_id=${teamId}`)
+      const url = teamId ? `/time-clock/team-status?team_id=${teamId}` : '/time-clock/team-status'
+      const res = await api.get(url)
       const now = new Date()
       // Calculate late status using local browser time
       const teamData = (res.data || []).map(member => {

@@ -37,10 +37,10 @@ const clockIn = async (req, res) => {
       const now = new Date();
       const shiftCheck = await pool.query(
         `SELECT start_time FROM shifts 
-         WHERE employee_id = $1 
-         AND DATE(start_time) = CURRENT_DATE 
-         AND start_time > NOW()
-         ORDER BY start_time ASC 
+          WHERE employee_id = $1 
+          AND start_time >= NOW() 
+          AND start_time < NOW() + INTERVAL '24 hours'
+          ORDER BY start_time ASC 
          LIMIT 1`,
         [employeeId]
       );
@@ -276,6 +276,9 @@ const getTeamStatus = async (req, res) => {
   try {
     const { team_id } = req.query;
     
+    // Handle undefined/null team_id from frontend
+    if (!team_id || team_id === 'undefined' || team_id === 'null') team_id = null;
+    
     // Get all employees who are currently clocked in or on break
     const result = await pool.query(
       `SELECT DISTINCT ON (tc.employee_id) 
@@ -328,11 +331,14 @@ const getTeamStatus = async (req, res) => {
 
 const getLateEmployees = async (req, res) => {
   try {
-    const { team_id } = req.query;
+    let { team_id } = req.query;
     
-    console.log('getLateEmployees called - CURRENT_DATE (UTC):', new Date().toISOString());
+    // Handle undefined/null team_id from frontend
+    if (!team_id || team_id === 'undefined' || team_id === 'null') team_id = null;
+    
+    console.log('getLateEmployees called - NOW():', new Date().toISOString(), 'team_id:', team_id);
 
-    // Find employees who have a shift that started but are NOT clocked in
+    // Use NOW() directly to avoid timezone issues - check last 12 hours
     const result = await pool.query(
       `SELECT DISTINCT ON (e.id)
           e.id as employee_id,
@@ -356,7 +362,7 @@ const getLateEmployees = async (req, res) => {
           ORDER BY clock_in DESC
           LIMIT 1
         ) tc ON true
-        WHERE s.start_time >= NOW() - INTERVAL '24 hours'
+        WHERE s.start_time >= NOW() - INTERVAL '12 hours'
           AND s.start_time <= NOW()
           AND (tc.status IS NULL OR tc.status = 'clocked_out')
           ${team_id ? 'AND e.team_id = $1' : ''}
@@ -369,6 +375,7 @@ const getLateEmployees = async (req, res) => {
       rows: result.rows.map(r => ({
         id: r.employee_id,
         name: `${r.first_name} ${r.last_name}`,
+        team_id: r.team_id,
         scheduled_start: r.scheduled_start,
         raw_start_time: r.raw_start_time,
         status: r.current_status
