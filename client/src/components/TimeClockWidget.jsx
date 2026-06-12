@@ -84,8 +84,14 @@ function TimeClockWidget() {
   const fetchLateEmployees = async (teamId) => {
     try {
       const res = await api.get(`/time-clock/late?team_id=${teamId}`)
-      console.log('Late employees:', res.data)
-      setLateEmployees(res.data || [])
+      const now = new Date()
+      // Calculate late status using local browser time
+      const lateData = (res.data || []).map(emp => {
+        const scheduledStart = parseLocalDate(emp.scheduled_start)
+        const minutesLate = scheduledStart ? Math.max(0, Math.round((now - scheduledStart) / (1000 * 60))) : 0
+        return { ...emp, minutes_late: minutesLate }
+      }).filter(emp => emp.minutes_late > 0)
+      setLateEmployees(lateData)
     } catch (error) {
       console.error('Failed to fetch late employees:', error)
       setLateEmployees([])
@@ -94,12 +100,17 @@ function TimeClockWidget() {
 
   const fetchTeamStatus = async (teamId) => {
     try {
-      const res = await api.get(`/time-clock/status/team?team_id=${teamId}`)
-      console.log('Team status:', res.data)
-      setTeamStatus(res.data || [])
-      
-      // Also fetch employees who are late but not clocked in
-      await fetchLateEmployees(teamId)
+      const res = await api.get(`/time-clock/team-status?team_id=${teamId}`)
+      const now = new Date()
+      // Calculate late status using local browser time
+      const teamData = (res.data || []).map(member => {
+        const scheduledStart = parseLocalDate(member.scheduled_start)
+        const clockIn = parseLocalDate(member.clock_in)
+        const isLate = scheduledStart && clockIn && clockIn > scheduledStart
+        const minutesLate = isLate ? Math.round((clockIn - scheduledStart) / (1000 * 60)) : 0
+        return { ...member, is_late: isLate, minutes_late: minutesLate }
+      })
+      setTeamStatus(teamData)
     } catch (error) {
       console.error('Failed to fetch team status:', error)
       setTeamStatus([])

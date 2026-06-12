@@ -71,7 +71,16 @@ function TimeClockHistory() {
       if (endDate) params.append('endDate', endDate)
 
       const res = await api.get(`/time-clock/history/${selectedEmployee}?${params}`)
-      setTimeRecords(res.data)
+      const now = new Date()
+      // Calculate late status using local browser time
+      const records = (res.data || []).map(record => {
+        const scheduledStart = parseLocalDate(record.scheduled_start)
+        const clockIn = parseLocalDate(record.clock_in)
+        const isLate = scheduledStart && clockIn && clockIn > scheduledStart
+        const minutesLate = isLate ? Math.round((clockIn - scheduledStart) / (1000 * 60)) : 0
+        return { ...record, is_late: isLate, minutes_late: minutesLate }
+      })
+      setTimeRecords(records)
     } catch (error) {
       console.error('Failed to fetch time records:', error)
       alert('Failed to fetch time records')

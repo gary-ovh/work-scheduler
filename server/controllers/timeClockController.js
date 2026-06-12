@@ -305,36 +305,18 @@ const getTeamStatus = async (req, res) => {
       team_id ? [team_id] : []
     );
 
-    // Determine late status - parse timestamps as local server time
-    const parseTime = (ts) => {
-      if (!ts) return null;
-      const [datePart, timePart] = ts.split(' ');
-      const [y, m, d] = datePart.split('-').map(Number);
-      const [h, min, s] = timePart.split(':').map(Number);
-      return new Date(y, m - 1, d, h, min, s);
-    };
-
-    const now = new Date();
-    const teamStatus = result.rows.map(person => {
-      const scheduledStart = parseTime(person.scheduled_start);
-      const clockInTime = parseTime(person.clock_in);
-      const isLate = scheduledStart && clockInTime && clockInTime > scheduledStart;
-      const minutesLate = isLate ? Math.round((clockInTime - scheduledStart) / (1000 * 60)) : 0;
-
-      return {
-        employee_id: person.employee_id,
-        first_name: person.first_name,
-        last_name: person.last_name,
-        team_name: person.team_name,
-        team_color: person.team_color,
-        status: person.status,
-        clock_in: person.clock_in,
-        break_duration: person.break_duration,
-        scheduled_start: person.scheduled_start,
-        is_late: isLate,
-        minutes_late: minutesLate
-      };
-    });
+    // Return raw data - frontend calculates late status using local browser time
+    const teamStatus = result.rows.map(person => ({
+      employee_id: person.employee_id,
+      first_name: person.first_name,
+      last_name: person.last_name,
+      team_name: person.team_name,
+      team_color: person.team_color,
+      status: person.status,
+      clock_in: person.clock_in,
+      break_duration: person.break_duration,
+      scheduled_start: person.scheduled_start
+    }));
 
     res.json(teamStatus);
   } catch (error) {
@@ -380,31 +362,17 @@ const getLateEmployees = async (req, res) => {
       team_id ? [currentTimeStr, team_id] : [currentTimeStr]
     );
 
-    const parseTime = (ts) => {
-      if (!ts) return null;
-      const [datePart, timePart] = ts.split(' ');
-      const [y, m, d] = datePart.split('-').map(Number);
-      const [h, min, s] = timePart.split(':').map(Number);
-      return new Date(y, m - 1, d, h, min, s);
-    };
-
-    // Calculate how late each employee is
-    const lateEmployees = result.rows.map(emp => {
-      const scheduledStart = parseTime(emp.scheduled_start);
-      const minutesLate = scheduledStart ? Math.round((now - scheduledStart) / (1000 * 60)) : 0;
-      
-      return {
-        employee_id: emp.employee_id,
-        first_name: emp.first_name,
-        last_name: emp.last_name,
-        team_name: emp.team_name,
-        team_color: emp.team_color,
-        scheduled_start: emp.scheduled_start,
-        scheduled_end: emp.scheduled_end,
-        minutes_late: minutesLate,
-        status: 'not_clocked_in'
-      };
-    }).filter(emp => emp.minutes_late > 0); // Only show if actually late
+    // Return raw data - frontend calculates late status using local time
+    const lateEmployees = result.rows.map(emp => ({
+      employee_id: emp.employee_id,
+      first_name: emp.first_name,
+      last_name: emp.last_name,
+      team_name: emp.team_name,
+      team_color: emp.team_color,
+      scheduled_start: emp.scheduled_start,
+      scheduled_end: emp.scheduled_end,
+      status: 'not_clocked_in'
+    }));
 
     res.json(lateEmployees);
   } catch (error) {
@@ -461,27 +429,12 @@ const getTimeHistory = async (req, res) => {
 
     const result = await pool.query(query, values);
 
-    // Add late calculation - parse timestamps as local server time
-    const parseTime = (ts) => {
-      if (!ts) return null;
-      const [datePart, timePart] = ts.split(' ');
-      const [y, m, d] = datePart.split('-').map(Number);
-      const [h, min, s] = timePart.split(':').map(Number);
-      return new Date(y, m - 1, d, h, min, s);
-    };
-
-    const records = result.rows.map(record => {
-      const scheduledStart = parseTime(record.scheduled_start);
-      const clockInTime = parseTime(record.clock_in);
-      const isLate = scheduledStart && clockInTime && clockInTime > scheduledStart;
-      const minutesLate = isLate ? Math.round((clockInTime - scheduledStart) / (1000 * 60)) : 0;
-
-      return {
-        ...record,
-        is_late: isLate,
-        minutes_late: minutesLate
-      };
-    });
+    // Return raw data - frontend calculates late status using local browser time
+    const records = result.rows.map(record => ({
+      ...record,
+      is_late: null,
+      minutes_late: null
+    }));
 
     res.json(records);
   } catch (error) {

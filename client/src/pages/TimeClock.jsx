@@ -65,8 +65,16 @@ function TimeClock() {
 
   const fetchTeamStatus = async (teamId) => {
     try {
-      const res = await api.get(`/time-clock/status/team?team_id=${teamId}`)
-      setTeamStatus(res.data)
+      const res = await api.get(`/time-clock/team-status?team_id=${teamId}`)
+      const now = new Date()
+      const teamData = (res.data || []).map(member => {
+        const scheduledStart = parseLocalDate(member.scheduled_start)
+        const clockIn = parseLocalDate(member.clock_in)
+        const isLate = scheduledStart && clockIn && clockIn > scheduledStart
+        const minutesLate = isLate ? Math.round((clockIn - scheduledStart) / (1000 * 60)) : 0
+        return { ...member, is_late: isLate, minutes_late: minutesLate }
+      })
+      setTeamStatus(teamData)
     } catch (error) {
       console.error('Failed to fetch team status:', error)
     }
