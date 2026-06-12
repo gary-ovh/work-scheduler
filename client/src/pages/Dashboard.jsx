@@ -44,27 +44,6 @@ function Dashboard({ onLogout }) {
   // Show back button on all pages except dashboard
   const showBackButton = location.pathname !== '/dashboard' && location.pathname !== '/'
 
-  // Get current user info from token
-  const getCurrentUserInfo = () => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]))
-        const employee = employees.find(e => e.user_id === payload.id)
-        return {
-          email: payload.email,
-          role: payload.role,
-          name: employee ? `${employee.first_name} ${employee.last_name}` : payload.email
-        }
-      } catch (error) {
-        console.error('Failed to parse user token:', error)
-      }
-    }
-    return null
-  }
-
-  const currentUser = getCurrentUserInfo()
-
   return (
     <div>
       <div className="header">
