@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const killPort = require('./kill-port-5000');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
@@ -14,6 +15,16 @@ const timeClockRoutes = require('./routes/timeClock');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Kill any existing process on port 5000 before starting
+killPort().then(() => {
+  startServer();
+}).catch((err) => {
+  console.error('Error killing port:', err);
+  startServer();
+});
+
+function startServer() {
 
 // CORS must be first, before helmet and rate limiter
 app.use(cors({
@@ -75,6 +86,7 @@ app.get('/', (req, res) => {
   res.json({ message: 'Work Scheduler API' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
