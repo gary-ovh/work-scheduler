@@ -17,6 +17,7 @@ router.use(authenticateToken);
 
 // Team status endpoint - MUST be before /status/:employeeId to avoid matching "team" as employeeId
 router.get('/status/team', timeClockController.getTeamStatus);
+router.get('/team-status', timeClockController.getTeamStatus);
 
 // Get employees who are late but not clocked in
 router.get('/late', timeClockController.getLateEmployees);
@@ -54,17 +55,6 @@ router.get('/status/:employeeId?', [
   param('employeeId').optional().isInt().withMessage('Valid employee ID is required'),
   validate
 ], timeClockController.getCurrentStatus);
-
-router.get('/status/team', (req, res, next) => {
-  console.log('Team status request - Query:', req.query, 'User:', req.user)
-  try {
-    // Skip validation, let controller handle it
-    next();
-  } catch (error) {
-    console.error('Team status route error:', error)
-    next(error)
-  }
-}, timeClockController.getTeamStatus);
 
 // History endpoint
 router.get('/history/:employeeId?', [
