@@ -295,7 +295,8 @@ const getTeamStatus = async (req, res) => {
         LEFT JOIN LATERAL (
           SELECT start_time FROM shifts 
           WHERE employee_id = e.id 
-          AND DATE(start_time) = CURRENT_DATE 
+          AND start_time >= NOW() - INTERVAL '24 hours'
+          AND start_time <= NOW() + INTERVAL '1 day'
           ORDER BY start_time ASC 
           LIMIT 1
         ) s ON true
@@ -355,7 +356,7 @@ const getLateEmployees = async (req, res) => {
           ORDER BY clock_in DESC
           LIMIT 1
         ) tc ON true
-        WHERE DATE(s.start_time) = CURRENT_DATE
+        WHERE s.start_time >= NOW() - INTERVAL '24 hours'
           AND s.start_time <= NOW()
           AND (tc.status IS NULL OR tc.status = 'clocked_out')
           ${team_id ? 'AND e.team_id = $1' : ''}
