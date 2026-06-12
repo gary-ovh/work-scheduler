@@ -14,8 +14,29 @@ const teamRoutes = require('./routes/teams');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Security: Set security headers
-app.use(helmet());
+// CORS must be first, before helmet and rate limiter
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  credentials: true
+}));
+
+// Security: Set security headers with CSP configured for development
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "http://localhost:3000", "http://localhost:5173"],
+      styleSrc: ["'self'", "'unsafe-inline'", "http://localhost:3000", "http://localhost:5173"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      connectSrc: ["'self'", "http://localhost:3000", "http://localhost:5173", "ws://localhost:3000", "ws://localhost:5173"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // Required for Vite HMR
+}));
 
 // Security: Rate limiting for API routes
 const apiLimiter = rateLimit({
@@ -38,7 +59,6 @@ const authLimiter = rateLimit({
 app.use('/api', apiLimiter);
 app.use('/api/auth', authLimiter);
 
-app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
