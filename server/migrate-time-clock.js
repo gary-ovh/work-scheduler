@@ -26,6 +26,7 @@ const migrateTimeClock = async () => {
         break_duration INTEGER DEFAULT 0,
         status VARCHAR(50) DEFAULT 'clocked_out',
         notes TEXT,
+        created_by INTEGER REFERENCES users(id),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )

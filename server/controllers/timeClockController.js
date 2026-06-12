@@ -3,6 +3,7 @@ const pool = require('../config/database');
 const clockIn = async (req, res) => {
   try {
     let employeeId = req.body.employee_id;
+    const isAdminClocking = req.body.for_employee; // Flag for admin clocking in employee
     
     // If no employee_id provided, get it from the authenticated user
     if (!employeeId && req.user) {
@@ -31,9 +32,36 @@ const clockIn = async (req, res) => {
       return res.status(400).json({ error: 'Already clocked in' });
     }
 
+    // Check if clocking in more than 15 minutes before scheduled shift (skip for admin clock-in)
+    if (!isAdminClocking) {
+      const now = new Date();
+      const shiftCheck = await pool.query(
+        `SELECT start_time FROM shifts 
+         WHERE employee_id = $1 
+         AND DATE(start_time) = CURRENT_DATE 
+         AND start_time > NOW()
+         ORDER BY start_time ASC 
+         LIMIT 1`,
+        [employeeId]
+      );
+
+      if (shiftCheck.rows.length > 0) {
+        const scheduledStart = new Date(shiftCheck.rows[0].start_time);
+        const earliestClockIn = new Date(scheduledStart.getTime() - 15 * 60 * 1000); // 15 minutes before
+        
+        if (now < earliestClockIn) {
+          const minutesUntilEarliest = Math.round((earliestClockIn - now) / (1000 * 60));
+          return res.status(400).json({ 
+            error: `Too early to clock in. You can clock in ${minutesUntilEarliest} minutes before your shift starts.`,
+            earliestClockIn: earliestClockIn.toISOString()
+          });
+        }
+      }
+    }
+
     const result = await pool.query(
-      'INSERT INTO time_clock (employee_id, clock_in, status, notes) VALUES ($1, NOW(), $2, $3) RETURNING *',
-      [employeeId, 'clocked_in', notes]
+      'INSERT INTO time_clock (employee_id, clock_in, status, notes, created_by) VALUES ($1, NOW(), $2, $3, $4) RETURNING *',
+      [employeeId, 'clocked_in', notes, isAdminClocking ? req.user.id : null]
     );
 
     res.status(201).json({

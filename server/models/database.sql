@@ -108,6 +108,7 @@ CREATE TABLE IF NOT EXISTS time_clock (
   break_duration INTEGER DEFAULT 0, -- in minutes
   status VARCHAR(50) DEFAULT 'clocked_out', -- clocked_in, on_break, clocked_out
   notes TEXT,
+  created_by INTEGER REFERENCES users(id), -- Manager who clocked employee in/out
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

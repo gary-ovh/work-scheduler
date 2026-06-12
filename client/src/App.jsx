@@ -8,6 +8,7 @@ import Employees from './pages/Employees'
 import TimeOff from './pages/TimeOff'
 import Templates from './pages/Templates'
 import Teams from './pages/Teams'
+import TimeClockHistory from './pages/TimeClockHistory'
 import Settings from './pages/Settings'
 
 function App() {
@@ -54,6 +55,7 @@ function App() {
           <Route path="templates" element={<Templates />} />
           <Route path="employees" element={<Employees />} />
           <Route path="time-off" element={<TimeOff />} />
+          <Route path="time-clock-history" element={<TimeClockHistory />} />
           <Route path="settings" element={<Settings onLogout={handleLogout} />} />
         </Route>
         <Route path="/" element={<Navigate to="/dashboard" />} />

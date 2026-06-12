@@ -37,6 +37,7 @@ function Dashboard({ onLogout }) {
     { path: '/dashboard', label: 'Dashboard' },
     { path: '/dashboard/shifts', label: 'Shifts' },
     ...(user?.role === 'manager' || user?.role === 'admin' ? [{ path: '/dashboard/templates', label: 'Templates' }] : []),
+    ...(user?.role === 'manager' || user?.role === 'admin' ? [{ path: '/dashboard/time-clock-history', label: 'Time Logs' }] : []),
     { path: '/dashboard/employees', label: 'Employees' },
     { path: '/dashboard/time-off', label: 'Time Off' }
   ]

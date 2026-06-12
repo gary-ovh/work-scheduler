@@ -12,6 +12,7 @@ const leaveRoutes = require('./routes/leave');
 const templateRoutes = require('./routes/templates');
 const teamRoutes = require('./routes/teams');
 const timeClockRoutes = require('./routes/timeClock');
+const { startAutoClockOutService } = require('./services/autoClockOut');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -25,6 +26,9 @@ killPort().then(() => {
 });
 
 function startServer() {
+
+  // Start auto clock-out service
+  startAutoClockOutService();
 
 // CORS must be first, before helmet and rate limiter
 app.use(cors({
