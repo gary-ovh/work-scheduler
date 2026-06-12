@@ -15,6 +15,14 @@ const getAllTemplates = async (req, res) => {
     query += ' ORDER BY name ASC';
 
     const result = await pool.query(query, values);
+    
+    console.log('Fetched templates:', result.rows.map(t => ({
+      id: t.id,
+      name: t.name,
+      start_time: t.start_time,
+      end_time: t.end_time
+    })));
+    
     res.json(result.rows);
   } catch (error) {
     console.error('Get templates error:', error);
@@ -42,9 +50,13 @@ const createTemplate = async (req, res) => {
   try {
     let { name, start_time, end_time, position, color, created_by } = req.body;
 
+    console.log('Creating template with:', { name, start_time, end_time, position });
+
     // Ensure times are in HH:MM:SS format
     if (start_time && start_time.length === 5) start_time += ':00';
     if (end_time && end_time.length === 5) end_time += ':00';
+
+    console.log('After format:', { start_time, end_time });
 
     if (new Date(`2000-01-01 ${start_time}`) >= new Date(`2000-01-01 ${end_time}`)) {
       return res.status(400).json({ error: 'End time must be after start time' });
@@ -54,6 +66,8 @@ const createTemplate = async (req, res) => {
       'INSERT INTO shift_templates (name, start_time, end_time, position, color, created_by) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
       [name, start_time, end_time, position, color || '#007bff', created_by]
     );
+
+    console.log('Template created:', result.rows[0]);
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -126,18 +140,46 @@ const applyTemplate = async (req, res) => {
     }
 
     const template = templateResult.rows[0];
-    const startDate = new Date(date);
-    const startTime = template.start_time;
-    const endTime = template.end_time;
+    
+    // Debug logging
+    console.log('Template fetched:', {
+      id: template.id,
+      name: template.name,
+      start_time: template.start_time,
+      end_time: template.end_time,
+      start_time_type: typeof template.start_time,
+      end_time_type: typeof template.end_time
+    });
+    
+    // Parse date string as local date (noon to avoid DST issues)
+    const [year, month, day] = date.split('-').map(Number);
+    const startDate = new Date(year, month - 1, day, 12, 0, 0);
+    
+    // Parse times directly from template - they are stored as TIME type
+    // Convert to strings and extract hours/minutes
+    const startTimeStr = String(template.start_time);
+    const endTimeStr = String(template.end_time);
+    
+    console.log('Time strings:', { startTimeStr, endTimeStr });
+    
+    const [startHour, startMinute] = startTimeStr.split(':').map(Number);
+    const [endHour, endMinute] = endTimeStr.split(':').map(Number);
 
-    const [startHour, startMinute, startSecond] = startTime.split(':');
-    const [endHour, endMinute, endSecond] = endTime.split(':');
+    console.log('Parsed times:', { startHour, startMinute, endHour, endMinute });
 
+    // Set the time on the date object using local time
     const shiftStart = new Date(startDate);
-    shiftStart.setHours(parseInt(startHour), parseInt(startMinute), parseInt(startSecond || 0));
+    shiftStart.setHours(startHour, startMinute, 0, 0);
 
     const shiftEnd = new Date(startDate);
-    shiftEnd.setHours(parseInt(endHour), parseInt(endMinute), parseInt(endSecond || 0));
+    shiftEnd.setHours(endHour, endMinute, 0, 0);
+
+    console.log('Shift dates:', {
+      shiftStart: shiftStart.toISOString(),
+      shiftEnd: shiftEnd.toISOString(),
+      shiftStart_local: shiftStart.toString(),
+      shiftEnd_local: shiftEnd.toString()
+    });
 
     if (shiftEnd < shiftStart) {
       shiftEnd.setDate(shiftEnd.getDate() + 1);
@@ -185,26 +227,29 @@ const applyTemplateToWeek = async (req, res) => {
     }
 
     const template = templateResult.rows[0];
-    const weekStart = new Date(week_start_date);
+    
+    // Parse week_start_date as local date (noon to avoid DST issues)
+    const [year, month, day] = week_start_date.split('-').map(Number);
+    const weekStart = new Date(year, month - 1, day, 12, 0, 0);
     const createdShifts = [];
 
     const positionsArray = positions || [template.position];
+    
+    // Parse times directly from template - they are stored as TIME type
+    const startTimeStr = String(template.start_time);
+    const endTimeStr = String(template.end_time);
+    const [startHour, startMinute] = startTimeStr.split(':').map(Number);
+    const [endHour, endMinute] = endTimeStr.split(':').map(Number);
 
     for (let i = 0; i < 7; i++) {
       const currentDate = new Date(weekStart);
       currentDate.setDate(currentDate.getDate() + i);
 
-      const startTime = template.start_time;
-      const endTime = template.end_time;
-
-      const [startHour, startMinute, startSecond] = startTime.split(':');
-      const [endHour, endMinute, endSecond] = endTime.split(':');
-
       const shiftStart = new Date(currentDate);
-      shiftStart.setHours(parseInt(startHour), parseInt(startMinute), parseInt(startSecond || 0));
+      shiftStart.setHours(startHour, startMinute, 0, 0);
 
       const shiftEnd = new Date(currentDate);
-      shiftEnd.setHours(parseInt(endHour), parseInt(endMinute), parseInt(endSecond || 0));
+      shiftEnd.setHours(endHour, endMinute, 0, 0);
 
       if (shiftEnd < shiftStart) {
         shiftEnd.setDate(shiftEnd.getDate() + 1);
