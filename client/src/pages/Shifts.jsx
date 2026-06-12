@@ -168,6 +168,7 @@ function Shifts() {
 
   const getShiftsForDay = (date) => {
     let dayShifts = shifts.filter(shift => {
+      // Parse the timestamp and convert to local time for comparison
       const shiftDate = new Date(shift.start_time)
       return shiftDate.toDateString() === date.toDateString()
     })
@@ -195,6 +196,12 @@ function Shifts() {
   const getTeamName = (employeeId) => {
     const employee = employees.find(e => e.id === employeeId)
     return employee?.team_name || null
+  }
+
+  // Format time showing local time from stored timestamp
+  const formatLocalTime = (timestamp) => {
+    const date = new Date(timestamp)
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
   }
 
   const isEmployeeOnLeave = (employeeId, date, leaveType) => {

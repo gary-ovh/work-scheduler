@@ -143,7 +143,8 @@ const applyTemplate = async (req, res) => {
       shiftEnd.setDate(shiftEnd.getDate() + 1);
     }
 
-    // Format as local time string for PostgreSQL with timezone offset
+    // Format as local datetime string WITHOUT timezone indicator
+    // PostgreSQL TIMESTAMP without timezone will store it as-is
     const formatLocal = (date) => {
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -151,12 +152,7 @@ const applyTemplate = async (req, res) => {
       const hours = String(date.getHours()).padStart(2, '0');
       const minutes = String(date.getMinutes()).padStart(2, '0');
       const seconds = String(date.getSeconds()).padStart(2, '0');
-      // Get timezone offset in HH:MM format
-      const offset = -date.getTimezoneOffset();
-      const offsetSign = offset >= 0 ? '+' : '-';
-      const offsetHours = String(Math.floor(Math.abs(offset) / 60)).padStart(2, '0');
-      const offsetMinutes = String(Math.abs(offset) % 60).padStart(2, '0');
-      return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${offsetSign}${offsetHours}:${offsetMinutes}`;
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     };
 
     const result = await pool.query(
