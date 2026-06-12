@@ -139,9 +139,13 @@ const applyTemplate = async (req, res) => {
       shiftEnd.setDate(shiftEnd.getDate() + 1);
     }
 
+    // Store as local time string in ISO format without timezone conversion
+    const shiftStartStr = shiftStart.toISOString().replace('Z', '');
+    const shiftEndStr = shiftEnd.toISOString().replace('Z', '');
+
     const result = await pool.query(
       'INSERT INTO shifts (employee_id, start_time, end_time, position, status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [employee_id, shiftStart.toISOString(), shiftEnd.toISOString(), position || template.position, 'scheduled']
+      [employee_id, shiftStartStr, shiftEndStr, position || template.position, 'scheduled']
     );
 
     res.status(201).json(result.rows[0]);
@@ -194,11 +198,15 @@ const applyTemplateToWeek = async (req, res) => {
         shiftEnd.setDate(shiftEnd.getDate() + 1);
       }
 
+      // Store as local time string in ISO format without timezone conversion
+      const shiftStartStr = shiftStart.toISOString().replace('Z', '');
+      const shiftEndStr = shiftEnd.toISOString().replace('Z', '');
+
       const position = positionsArray[i % positionsArray.length];
 
       const result = await pool.query(
         'INSERT INTO shifts (employee_id, start_time, end_time, position, status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-        [employee_id, shiftStart.toISOString(), shiftEnd.toISOString(), position, 'scheduled']
+        [employee_id, shiftStartStr, shiftEndStr, position, 'scheduled']
       );
 
       createdShifts.push(result.rows[0]);

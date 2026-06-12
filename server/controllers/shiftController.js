@@ -63,9 +63,13 @@ const createShift = async (req, res) => {
       return res.status(400).json({ error: 'End time must be after start time' });
     }
 
+    // If times are in ISO format with Z, remove the Z to store as local time
+    const startTime = start_time.endsWith('Z') ? start_time.replace('Z', '') : start_time;
+    const endTime = end_time.endsWith('Z') ? end_time.replace('Z', '') : end_time;
+
     const result = await pool.query(
       'INSERT INTO shifts (employee_id, start_time, end_time, position, notes) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [employee_id, start_time, end_time, position, notes]
+      [employee_id, startTime, endTime, position, notes]
     );
 
     res.status(201).json(result.rows[0]);
