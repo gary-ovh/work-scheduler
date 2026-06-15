@@ -16,10 +16,17 @@ function TimeClockWidget() {
   // Parse timestamp string as local time without timezone conversion
   const parseLocalDate = (timestampStr) => {
     if (!timestampStr) return null
-    const [datePart, timePart] = timestampStr.split(' ')
-    const [year, month, day] = datePart.split('-').map(Number)
-    const [hour, minute, second] = timePart.split(':').map(Number)
-    return new Date(year, month - 1, day, hour, minute, second || 0)
+    // Handle "YYYY-MM-DD HH:MM:SS" format
+    if (timestampStr.includes(' ')) {
+      const [datePart, timePart] = timestampStr.split(' ')
+      if (!datePart || !timePart) return null
+      const [year, month, day] = datePart.split('-').map(Number)
+      const [hour, minute, second] = timePart.split(':').map(Number)
+      return new Date(year, month - 1, day, hour, minute, second || 0)
+    }
+    // Handle ISO format fallback
+    const d = new Date(timestampStr)
+    return isNaN(d.getTime()) ? null : d
   }
 
   const formatDuration = (totalMinutes) => {
@@ -282,7 +289,7 @@ function TimeClockWidget() {
           <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
             <strong>Current Session:</strong>
             <div style={{ fontSize: '13px', color: '#666', marginTop: '5px' }}>
-              Clock In: {format(parseLocalDate(timeClockData.clock_in), 'h:mm a')}
+              Clock In: {timeClockData.clock_in ? format(parseLocalDate(timeClockData.clock_in), 'h:mm a') : '-'}
               {timeClockData.break_duration > 0 && (
                 <span> • Break Time: {timeClockData.break_duration} min</span>
               )}
@@ -394,7 +401,7 @@ function TimeClockWidget() {
                         {member.status === 'clocked_in' ? '🟢 In' : member.status === 'on_break' ? '☕ Break' : '🔴 Out'}
                       </span>
                     </td>
-                    <td>{format(parseLocalDate(member.clock_in), 'h:mm a')}</td>
+                    <td>{member.clock_in ? format(parseLocalDate(member.clock_in), 'h:mm a') : '-'}</td>
                     <td>{member.break_duration ? `${member.break_duration} min` : '-'}</td>
                     <td>
                       {member.scheduled_start ? format(parseLocalDate(member.scheduled_start), 'h:mm a') : '-'}

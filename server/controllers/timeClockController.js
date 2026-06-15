@@ -248,7 +248,12 @@ const getCurrentStatus = async (req, res) => {
     const employeeId = req.params.employeeId || req.user.employee_id;
 
     const result = await pool.query(
-      `SELECT tc.*, e.first_name, e.last_name, t.name as team_name, t.color as team_color
+      `SELECT tc.employee_id, tc.status, tc.break_duration, tc.total_hours, tc.notes, tc.created_by,
+        TO_CHAR(tc.clock_in, 'YYYY-MM-DD HH24:MI:SS') as clock_in,
+        TO_CHAR(tc.clock_out, 'YYYY-MM-DD HH24:MI:SS') as clock_out,
+        TO_CHAR(tc.break_start, 'YYYY-MM-DD HH24:MI:SS') as break_start,
+        TO_CHAR(tc.break_end, 'YYYY-MM-DD HH24:MI:SS') as break_end,
+        e.first_name, e.last_name, t.name as team_name, t.color as team_color
        FROM time_clock tc
        JOIN employees e ON tc.employee_id = e.id
        LEFT JOIN teams t ON e.team_id = t.id
@@ -281,36 +286,38 @@ const getTeamStatus = async (req, res) => {
     
     // Get all employees who are currently clocked in or on break
     const result = await pool.query(
-      `SELECT DISTINCT ON (tc.employee_id) 
-          tc.employee_id,
-          tc.status,
-          tc.break_duration,
-          TO_CHAR(tc.clock_in, 'YYYY-MM-DD HH24:MI:SS') as clock_in,
-          e.first_name, 
-          e.last_name, 
-          e.team_id,
-          t.name as team_name,
-          t.color as team_color,
-          TO_CHAR(s.start_time, 'YYYY-MM-DD HH24:MI:SS') as scheduled_start
-        FROM time_clock tc
-        JOIN employees e ON tc.employee_id = e.id
-        LEFT JOIN teams t ON e.team_id = t.id
-        LEFT JOIN LATERAL (
-          SELECT start_time FROM shifts 
-          WHERE employee_id = e.id 
-          AND start_time >= NOW() - INTERVAL '24 hours'
-          AND start_time <= NOW() + INTERVAL '1 day'
-          ORDER BY start_time ASC 
-          LIMIT 1
-        ) s ON true
-        WHERE tc.clock_out IS NULL
-          ${team_id ? 'AND e.team_id = $1' : ''}
-        ORDER BY tc.employee_id, tc.clock_in DESC`,
+      `SELECT tc.employee_id,
+           tc.status,
+           tc.break_duration,
+           TO_CHAR(tc.clock_in, 'YYYY-MM-DD HH24:MI:SS') as clock_in,
+           e.first_name, 
+           e.last_name, 
+           e.team_id,
+           t.name as team_name,
+           t.color as team_color,
+           TO_CHAR(s.start_time, 'YYYY-MM-DD HH24:MI:SS') as scheduled_start
+         FROM time_clock tc
+         JOIN employees e ON tc.employee_id = e.id
+         LEFT JOIN teams t ON e.team_id = t.id
+         LEFT JOIN shifts s ON s.employee_id = e.id 
+           AND s.start_time >= NOW() - INTERVAL '24 hours'
+           AND s.start_time <= NOW() + INTERVAL '1 day'
+         WHERE tc.clock_out IS NULL
+           ${team_id ? 'AND e.team_id = $1' : ''}
+         ORDER BY tc.employee_id, tc.clock_in DESC`,
       team_id ? [team_id] : []
     );
 
-    // Return raw data - frontend calculates late status using local browser time
-    const teamStatus = result.rows.map(person => ({
+    // Deduplicate by employee_id, keeping the most recent entry
+    const seen = new Map();
+    for (const row of result.rows) {
+      if (!seen.has(row.employee_id) || 
+          (row.clock_in && row.clock_in > (seen.get(row.employee_id)?.clock_in || ''))) {
+        seen.set(row.employee_id, row);
+      }
+    }
+
+    const teamStatus = Array.from(seen.values()).map(person => ({
       employee_id: person.employee_id,
       first_name: person.first_name,
       last_name: person.last_name,
