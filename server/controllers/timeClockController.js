@@ -60,7 +60,12 @@ const clockIn = async (req, res) => {
     }
 
     const result = await pool.query(
-      'INSERT INTO time_clock (employee_id, clock_in, status, notes, created_by) VALUES ($1, NOW(), $2, $3, $4) RETURNING *',
+      `INSERT INTO time_clock (employee_id, clock_in, status, notes, created_by) VALUES ($1, NOW(), $2, $3, $4)
+       RETURNING id, employee_id, status, notes, created_by, break_duration,
+         TO_CHAR(clock_in, 'YYYY-MM-DD HH24:MI:SS') as clock_in,
+         TO_CHAR(clock_out, 'YYYY-MM-DD HH24:MI:SS') as clock_out,
+         TO_CHAR(break_start, 'YYYY-MM-DD HH24:MI:SS') as break_start,
+         TO_CHAR(break_end, 'YYYY-MM-DD HH24:MI:SS') as break_end`,
       [employeeId, 'clocked_in', notes, isAdminClocking ? req.user.id : null]
     );
 
@@ -114,12 +119,16 @@ const clockOut = async (req, res) => {
 
     const result = await pool.query(
       `UPDATE time_clock 
-       SET clock_out = NOW(), 
-           total_hours = $1, 
-           status = 'clocked_out',
-           updated_at = NOW()
-       WHERE id = $2
-       RETURNING *`,
+        SET clock_out = NOW(), 
+            total_hours = $1, 
+            status = 'clocked_out',
+            updated_at = NOW()
+        WHERE id = $2
+        RETURNING id, employee_id, status, notes, created_by, break_duration, total_hours,
+          TO_CHAR(clock_in, 'YYYY-MM-DD HH24:MI:SS') as clock_in,
+          TO_CHAR(clock_out, 'YYYY-MM-DD HH24:MI:SS') as clock_out,
+          TO_CHAR(break_start, 'YYYY-MM-DD HH24:MI:SS') as break_start,
+          TO_CHAR(break_end, 'YYYY-MM-DD HH24:MI:SS') as break_end`,
       [totalHours, timeClock.id]
     );
 
@@ -165,11 +174,15 @@ const startBreak = async (req, res) => {
 
     const result = await pool.query(
       `UPDATE time_clock 
-       SET break_start = NOW(), 
-           status = 'on_break',
-           updated_at = NOW()
-       WHERE id = $1
-       RETURNING *`,
+        SET break_start = NOW(), 
+            status = 'on_break',
+            updated_at = NOW()
+        WHERE id = $1
+        RETURNING id, employee_id, status, notes, created_by, break_duration,
+          TO_CHAR(clock_in, 'YYYY-MM-DD HH24:MI:SS') as clock_in,
+          TO_CHAR(clock_out, 'YYYY-MM-DD HH24:MI:SS') as clock_out,
+          TO_CHAR(break_start, 'YYYY-MM-DD HH24:MI:SS') as break_start,
+          TO_CHAR(break_end, 'YYYY-MM-DD HH24:MI:SS') as break_end`,
       [current.rows[0].id]
     );
 
@@ -222,12 +235,16 @@ const endBreak = async (req, res) => {
 
     const result = await pool.query(
       `UPDATE time_clock 
-       SET break_end = NOW(), 
-           break_duration = $1,
-           status = 'clocked_in',
-           updated_at = NOW()
-       WHERE id = $2
-       RETURNING *`,
+        SET break_end = NOW(), 
+            break_duration = $1,
+            status = 'clocked_in',
+            updated_at = NOW()
+        WHERE id = $2
+        RETURNING id, employee_id, status, notes, created_by, break_duration,
+          TO_CHAR(clock_in, 'YYYY-MM-DD HH24:MI:SS') as clock_in,
+          TO_CHAR(clock_out, 'YYYY-MM-DD HH24:MI:SS') as clock_out,
+          TO_CHAR(break_start, 'YYYY-MM-DD HH24:MI:SS') as break_start,
+          TO_CHAR(break_end, 'YYYY-MM-DD HH24:MI:SS') as break_end`,
       [totalBreakMinutes, timeClock.id]
     );
 

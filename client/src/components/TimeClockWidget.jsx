@@ -16,14 +16,23 @@ function TimeClockWidget() {
   // Parse timestamp string as local time without timezone conversion
   const parseLocalDate = (timestampStr) => {
     if (!timestampStr) return null
-    // Handle "YYYY-MM-DD HH:MM:SS" format
-    if (timestampStr.includes(' ')) {
-      const [datePart, timePart] = timestampStr.split(' ')
-      if (!datePart || !timePart) return null
-      const [year, month, day] = datePart.split('-').map(Number)
-      const [hour, minute, second] = timePart.split(':').map(Number)
-      return new Date(year, month - 1, day, hour, minute, second || 0)
+    try {
+      // Handle "YYYY-MM-DD HH:MM:SS" format
+      if (timestampStr.includes(' ')) {
+        const [datePart, timePart] = timestampStr.split(' ')
+        if (!datePart || !timePart) return null
+        const [year, month, day] = datePart.split('-').map(Number)
+        const [hour, minute, second] = timePart.split(':').map(Number)
+        return new Date(year, month - 1, day, hour, minute, second || 0)
+      }
+      // Handle ISO format fallback (from timestamps not yet converted to TO_CHAR)
+      const d = new Date(timestampStr)
+      if (isNaN(d.getTime())) return null
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds())
+    } catch {
+      return null
     }
+  }
     // Handle ISO format fallback
     const d = new Date(timestampStr)
     return isNaN(d.getTime()) ? null : d
