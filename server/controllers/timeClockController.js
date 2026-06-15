@@ -296,8 +296,8 @@ const getCurrentStatus = async (req, res) => {
 
 const getTeamStatus = async (req, res) => {
   try {
-    const { team_id } = req.query;
-    
+    let { team_id } = req.query;
+
     // Handle undefined/null team_id from frontend
     if (!team_id || team_id === 'undefined' || team_id === 'null') team_id = null;
     
