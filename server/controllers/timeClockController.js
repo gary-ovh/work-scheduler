@@ -349,7 +349,8 @@ const getTeamStatus = async (req, res) => {
     res.json(teamStatus);
   } catch (error) {
     console.error('Get team status error:', error);
-    res.status(500).json({ error: 'Failed to get team status' });
+    console.error('Get team status stack:', error.stack);
+    res.status(500).json({ error: 'Failed to get team status', details: error.message });
   }
 };
 
