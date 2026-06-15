@@ -33,10 +33,6 @@ function TimeClockWidget() {
       return null
     }
   }
-    // Handle ISO format fallback
-    const d = new Date(timestampStr)
-    return isNaN(d.getTime()) ? null : d
-  }
 
   const formatDuration = (totalMinutes) => {
     if (!totalMinutes || totalMinutes <= 0) return '0 min'
